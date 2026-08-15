@@ -70,48 +70,6 @@ AWS Region에 VPC를 만들고, 그 안의 Public Subnet에 Nginx가 실행되�
 
 ---
 
-## 외부 접속 검증
-
-**검증 방식: (B) 헬스체크 호출** — 응답 본문이 고정되어 있어 증빙이 명확하기 때문입니다. (A) 브라우저 접속도 함께 확인했습니다.
-
-| 구분 | 내용 |
-|------|------|
-| 접속 주소 | `http://43.202.71.184/health` |
-| 응답 | `200 OK`, 본문 `OK` |
-| 함께 확인 | `http://43.202.71.184/` → `200`, 정적 페이지 표시 |
-
-```console
-$ curl -i http://43.202.71.184/health
-HTTP/1.1 200 OK
-Server: nginx/1.24.0 (Ubuntu)
-Content-Type: text/plain
-Content-Length: 3
-
-OK
-```
-
-![헬스체크 및 브라우저 접속 결과](docs/images/web-access.png)
-
-### 요구사항 검증 결과
-
-`scripts/verify.sh` 가 아래 항목(마지막 정리 항목 제외)을 한 번에 점검하고, PASS/FAIL 판정을 포함한 전체 출력을 [`docs/verification.log`](docs/verification.log) 에 남깁니다. 11개 항목 전부 통과했습니다.
-
-| 구분 | 요구사항 | 검증 방법 |
-|------|----------|-----------|
-| 네트워크 | 라우트 `0.0.0.0/0 → IGW` 존재 | `describe-route-tables` 의 게이트웨이 ID 확인 |
-| 네트워크 | 서브넷 퍼블릭 IPv4 자동 할당 | `describe-subnets` 의 `MapPublicIpOnLaunch` |
-| 네트워크 | 인스턴스의 인터넷 아웃바운드 | 인스턴스 내부 `curl https://example.com` → 200 |
-| 컴퓨트 | SSH 접속 가능 | `ssh -i ~/.ssh/codyssey-key.pem ubuntu@43.202.71.184` |
-| 컴퓨트 | 웹 서버 실행 상태 | `systemctl is-active nginx` → `active` |
-| 컴퓨트 | 로컬 루프백 응답 | 인스턴스 내부 `curl http://localhost` → 200 |
-| 보안 | HTTP 80 은 전체 공개 | 보안 그룹 인바운드 규칙 판정 |
-| 보안 | SSH 22 는 전체 공개 아님 | 보안 그룹 인바운드 규칙 판정 |
-| 보안 | `0.0.0.0/0` 전체 포트 허용 규칙 없음 | 보안 그룹 인바운드 규칙 판정 |
-| 외부 접속 | `GET /health` → 200 + 본문 `OK` | 로컬에서 `curl` |
-| 운영 | 실습 리소스 정리 완료 | [정리 체크리스트](docs/cleanup-checklist.md) 의 항목별 조회 명령 |
-
----
-
 ## 보안 설계
 
 ### Security Group — 네트워크 계층 접근 제어
@@ -192,18 +150,51 @@ INSTANCE_TYPE=t3.micro SSH_CIDR=203.0.113.10/32 bash scripts/provision.sh
 
 ---
 
+## 검증 결과
+
+**검증 방식: (B) 헬스체크 호출** — 응답 본문이 고정되어 있어 증빙이 명확하기 때문입니다. (A) 브라우저 접속도 함께 확인했습니다.
+
+| 구분 | 내용 |
+|------|------|
+| 접속 주소 | `http://43.202.71.184/health` |
+| 응답 | `200 OK`, 본문 `OK` |
+| 함께 확인 | `http://43.202.71.184/` → `200`, 정적 페이지 표시 |
+
+```console
+$ curl -i http://43.202.71.184/health
+HTTP/1.1 200 OK
+Server: nginx/1.24.0 (Ubuntu)
+Content-Type: text/plain
+Content-Length: 3
+
+OK
+```
+
+![헬스체크 및 브라우저 접속 결과](docs/images/web-access.png)
+
+### 요구사항 검증 결과
+
+`scripts/verify.sh` 가 아래 항목(마지막 정리 항목 제외)을 한 번에 점검하고, PASS/FAIL 판정을 포함한 전체 출력을 [`docs/verification.log`](docs/verification.log) 에 남깁니다. 11개 항목 전부 통과했습니다.
+
+| 구분 | 요구사항 | 검증 방법 |
+|------|----------|-----------|
+| 네트워크 | 라우트 `0.0.0.0/0 → IGW` 존재 | `describe-route-tables` 의 게이트웨이 ID 확인 |
+| 네트워크 | 서브넷 퍼블릭 IPv4 자동 할당 | `describe-subnets` 의 `MapPublicIpOnLaunch` |
+| 네트워크 | 인스턴스의 인터넷 아웃바운드 | 인스턴스 내부 `curl https://example.com` → 200 |
+| 컴퓨트 | SSH 접속 가능 | `ssh -i ~/.ssh/codyssey-key.pem ubuntu@43.202.71.184` |
+| 컴퓨트 | 웹 서버 실행 상태 | `systemctl is-active nginx` → `active` |
+| 컴퓨트 | 로컬 루프백 응답 | 인스턴스 내부 `curl http://localhost` → 200 |
+| 보안 | HTTP 80 은 전체 공개 | 보안 그룹 인바운드 규칙 판정 |
+| 보안 | SSH 22 는 전체 공개 아님 | 보안 그룹 인바운드 규칙 판정 |
+| 보안 | `0.0.0.0/0` 전체 포트 허용 규칙 없음 | 보안 그룹 인바운드 규칙 판정 |
+| 외부 접속 | `GET /health` → 200 + 본문 `OK` | 로컬에서 `curl` |
+| 운영 | 실습 리소스 정리 완료 | [정리 체크리스트](docs/cleanup-checklist.md) 의 항목별 조회 명령 |
+
+---
+
 ## 트러블슈팅
 
-[`docs/troubleshooting.md`](docs/troubleshooting.md) — 1절은 계층별 진단 절차, 2절은 실제 발생한 장애 3건의 증상·가설·검증·조치·결과·재발방지 기록입니다.
-
-| # | 발생 단계 | 증상 | 원인 |
-|:-:|-----------|------|------|
-| 1 | 인프라 생성 | `UnauthorizedOperation` 으로 프로비저닝 중단 | IAM 정책에 `ec2:ModifySubnetAttribute` 누락 |
-| 2 | 외부 접속 검증 | 80 포트 `Connection refused` | user-data 의 Nginx 설치가 아직 진행 중 |
-| 3 | SSH 접속 | 되던 SSH 가 갑자기 타임아웃 | 네트워크 전환으로 운영자 공인 IP 변경 |
-
-세 건 모두 "증상이 같아도 원인 계층은 다르다"는 점을 보여줍니다.
-2번은 타임아웃이 아니라 `Connection refused` 였다는 점에서 AWS 설정이 아닌 서버 내부 문제로 좁혀졌고, 3번은 80 포트는 되는데 22 포트만 안 되는 비대칭이 보안 그룹을 가리켰습니다.
+구축과 검증 중 발생한 문제 3건은 [트러블슈팅 보고서](docs/troubleshooting.md)에 증상 → 가설 → 검증 → 조치 → 결과 → 재발 방지 순서로 정리했습니다.
 
 ---
 
@@ -222,6 +213,7 @@ INSTANCE_TYPE=t3.micro SSH_CIDR=203.0.113.10/32 bash scripts/provision.sh
 B6-1.aws-infra-base/
 ├── docs/                           # 제출 문서 및 증빙
 │   ├── architecture.png            # 아키텍처 다이어그램
+│   ├── study-notes.md              # AWS 기초 용어와 과제 학습 노트
 │   ├── troubleshooting.md          # 트러블슈팅 보고서
 │   ├── cleanup-checklist.md        # 리소스 정리 체크리스트
 │   ├── verification.log            # verify.sh 실행 기록
