@@ -27,8 +27,8 @@ GREEN = "#2e7d32"
 RED = "#c1272d"
 GRAY = "#5f6b7a"
 
-# 트래픽이 지나는 수직 경로 (요청 / 응답)
-X_REQ, X_RES = 38, 44
+# 트래픽이 지나는 수직 경로 (SSH / HTTP 요청 / 응답)
+X_SSH, X_REQ, X_RES = 32, 38, 44
 
 
 def box(ax, xy, w, h, *, edge, face="white", style="solid", lw=1.4):
@@ -60,6 +60,16 @@ def arrow(ax, x, y0, y1, *, color):
     )
 
 
+def dotted_arrow(ax, x, y0, y1, *, color):
+    ax.add_patch(
+        FancyArrowPatch(
+            (x, y0), (x, y1), arrowstyle="-|>", mutation_scale=11,
+            linewidth=1.2, linestyle=(0, (1.5, 2.2)), color=color,
+            shrinkA=0, shrinkB=0, zorder=4,
+        )
+    )
+
+
 def main():
     plt.rcParams["font.sans-serif"] = ["Malgun Gothic", "AppleGothic", "DejaVu Sans"]
     plt.rcParams["axes.unicode_minus"] = False
@@ -74,7 +84,7 @@ def main():
     title(ax, 26, 97.7, "Client")
     body(ax, 26, 94.9, "브라우저 / curl  ·  출발지: 학습자 공인 IP", color=GRAY)
 
-    ax.text(35, 85, "Internet", color=GRAY, fontsize=10,
+    ax.text(25, 85, "Internet", color=GRAY, fontsize=10,
             fontweight="bold", ha="right", va="center", zorder=3)
 
     # ── AWS Cloud ──────────────────────────────────────────────────
@@ -131,17 +141,21 @@ def main():
         ax, 62, 29.2,
         "IN   80/tcp  ←  0.0.0.0/0\n"
         "IN   22/tcp  ←  <내 공인 IP>/32\n"
-        "OUT  all       →  0.0.0.0/0",
+        "OUT  ALL traffic  →  0.0.0.0/0",
+        size=7.8,
     )
     body(ax, 62, 19.4, "0.0.0.0/0 에 대한 0-65535 전체 허용\n규칙은 생성하지 않음",
          color=RED, size=7.8)
 
     # ── 트래픽 흐름 ─────────────────────────────────────────────────
+    dotted_arrow(ax, X_SSH, 92, 40, color=GRAY)  # Client → EC2 (SSH)
     arrow(ax, X_REQ, 92, 74, color=BLUE)     # Client → IGW
     arrow(ax, X_REQ, 66, 40, color=BLUE)     # IGW → EC2
     arrow(ax, X_RES, 40, 66, color=GREEN)    # EC2 → IGW
     arrow(ax, X_RES, 74, 92, color=GREEN)    # IGW → Client
 
+    ax.text(8, 70.5, "SSH :22\n학습자 공인 IP/32", color=GRAY, fontsize=7.6,
+            ha="left", va="center", linespacing=1.4, zorder=3)
     ax.text(46.5, 87.5, "① HTTP :80 요청", color=BLUE, fontsize=8.5,
             ha="left", va="center", zorder=3)
     ax.text(46.5, 83, "④ 200 OK 응답", color=GREEN, fontsize=8.5,
