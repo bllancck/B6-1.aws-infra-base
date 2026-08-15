@@ -9,29 +9,29 @@
 <table>
   <thead>
     <tr>
-      <th width="18%">영역</th>
+      <th width="15%">영역</th>
       <th width="27%">정의</th>
-      <th width="55%">구현 내용</th>
+      <th width="58%">구현 내용</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td width="18%"><strong>네트워크</strong></td>
+      <td width="15%"><strong>네트워크</strong></td>
       <td>컴퓨터와 서비스가 데이터를 주고받도록 연결하는 구조</td>
       <td><code>10.0.0.0/16</code> VPC 안에 <code>10.0.1.0/24</code> Public Subnet을 만들고, Internet Gateway와 Route Table의 <code>0.0.0.0/0</code> 경로를 연결해 인터넷 통신을 구성합니다.</td>
     </tr>
     <tr>
-      <td width="18%"><strong>서버</strong></td>
+      <td width="15%"><strong>서버</strong></td>
       <td>애플리케이션을 실행하고 사용자의 요청을 처리하는 컴퓨터</td>
       <td>Public Subnet에 Ubuntu 24.04 LTS 기반 <code>t2.micro</code> EC2를 생성하고 Public IP를 할당합니다. <code>user-data</code>로 Nginx를 설치해 <code>/</code>와 <code>/health</code> 응답을 제공합니다.</td>
     </tr>
     <tr>
-      <td width="18%"><strong>보안</strong></td>
+      <td width="15%"><strong>보안</strong></td>
       <td>서비스에 허용할 네트워크 접근 범위를 정하는 규칙</td>
       <td>Security Group에서 HTTP 80은 <code>0.0.0.0/0</code>에 공개하고 SSH 22는 운영자 IP <code>/32</code>에만 허용합니다. 전체 포트를 공개하는 규칙은 만들지 않습니다.</td>
     </tr>
     <tr>
-      <td width="18%"><strong>권한</strong></td>
+      <td width="15%"><strong>권한</strong></td>
       <td>사용자가 AWS에서 수행할 수 있는 작업의 범위</td>
       <td><code>codyssey-infra</code> IAM 사용자에게 EC2, VPC, Security Group 구성과 비용 확인에 필요한 권한만 부여합니다. 리소스 작업은 서울 Region으로 제한하고, EC2 생성은 <code>t2.micro</code>·<code>t3.micro</code>만 허용하며 <code>AdministratorAccess</code>는 부여하지 않습니다.</td>
     </tr>
