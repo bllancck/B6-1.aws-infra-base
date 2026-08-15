@@ -8,6 +8,8 @@ AWS에서 네트워크와 서버를 직접 구성하고, 보안과 사용자 권
 
 ![아키텍처 다이어그램](docs/architecture.png)
 
+> 용어가 낯설다면 먼저 [AWS 기초 웹 인프라 학습 노트](docs/study-notes.md)를 읽고 아래 내용을 확인하세요.
+
 서울 리전의 VPC 안에 퍼블릭 서브넷을 만들고, 그 안에 Nginx가 실행되는 EC2 인스턴스를 배치했습니다. 외부 요청은 다음 경로를 따라 웹 서버에 도달합니다.
 
 `사용자 → Internet Gateway → Public Subnet → Security Group → EC2 → Nginx`
