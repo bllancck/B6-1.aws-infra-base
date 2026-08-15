@@ -56,18 +56,18 @@ AWS Region에 VPC를 만들고, 그 안의 Public Subnet에 Nginx가 실행되�
 
 ## 구성 요약
 
-| 항목 | 값 |
-|------|-----|
-| **리전 / AZ** | `ap-northeast-2` (서울) / `ap-northeast-2a` |
-| **VPC** | `codyssey-vpc` — `10.0.0.0/16` |
-| **서브넷** | `codyssey-public-subnet-a` — `10.0.1.0/24`, 퍼블릭 IPv4 자동 할당 ON |
-| **인터넷 경로** | `codyssey-igw` + 라우트 `0.0.0.0/0 → IGW` |
-| **인스턴스** | `t2.micro`, Ubuntu 24.04 LTS, EBS gp3 8 GiB (`DeleteOnTermination=true`) |
-| **웹 서버** | Nginx 1.24.0 (`:80`) — `/` 정적 페이지, `/health` 고정 응답 |
-| **보안 그룹** | `codyssey-web-sg` — 80 ← `0.0.0.0/0`, 22 ← 운영자 IP `/32` |
-| **IAM** | `codyssey-infra` 사용자 — EC2/VPC 구성 권한만, `AdministratorAccess` 미부여 |
-| **작업 환경** | WSL2 Ubuntu + AWS CLI v2 |
-| **실습 일시** | 2026-08-10 23:05 구축 ~ 23:58 정리 완료 (KST) |
+| 영역 | 구성 |
+|------|------|
+| **배포 위치** | AWS 서울 Region(`ap-northeast-2`), AZ `ap-northeast-2a` |
+| **네트워크** | VPC `10.0.0.0/16` 안에 Public Subnet `10.0.1.0/24` 구성 |
+| **인터넷 연결** | Internet Gateway와 `0.0.0.0/0` Route 연결, 퍼블릭 IPv4 자동 할당 |
+| **서버** | EC2 `t2.micro`, Ubuntu 24.04 LTS |
+| **스토리지** | EBS gp3 8 GiB, EC2 인스턴스 삭제 시 함께 삭제 |
+| **웹 서비스** | Nginx가 HTTP 80번 포트에서 `/`와 `/health` 응답 제공 |
+| **접근 제어** | HTTP 80은 전체 공개, SSH 22는 운영자 IP `/32`에만 허용 |
+| **권한 관리** | `codyssey-infra` IAM 사용자에게 인프라 구성과 비용 확인에 필요한 권한만 부여 |
+| **자동화** | AWS CLI 스크립트로 인프라 생성, 검증, 삭제 수행 |
+| **실습 결과** | 요구사항 11개 통과, 2026-08-10 23:58 리소스 정리 완료(KST) |
 
 ---
 
