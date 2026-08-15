@@ -2,14 +2,41 @@
 
 이 프로젝트는 VPC로 격리된 네트워크를 구성하고, 가상 서버에 애플리케이션을 배포해 외부에서 접속 가능한 웹 서비스를 만드는 것을 목표로 합니다. 네트워크와 서버 구축부터 보안·권한 설정, 접속 검증, 문제 해결, 리소스 정리까지의 과정을 담았습니다.
 
-### 프로젝트 한눈에 보기
+---
 
-| 영역 | 정의 | 구현 내용 |
-|------|------|-----------|
-| **네트워크** | 컴퓨터와 서비스가 데이터를 주고받도록 연결하는 구조 | `10.0.0.0/16` VPC 안에 `10.0.1.0/24` Public Subnet을 만들고, Internet Gateway와 Route Table의 `0.0.0.0/0` 경로를 연결해 인터넷 통신을 구성합니다. |
-| **서버** | 애플리케이션을 실행하고 사용자의 요청을 처리하는 컴퓨터 | Public Subnet에 Ubuntu 24.04 LTS 기반 `t2.micro` EC2를 생성하고 Public IP를 할당합니다. `user-data`로 Nginx를 설치해 `/`와 `/health` 응답을 제공합니다. |
-| **보안** | 서비스에 허용할 네트워크 접근 범위를 정하는 규칙 | Security Group에서 HTTP 80은 `0.0.0.0/0`에 공개하고 SSH 22는 운영자 IP `/32`에만 허용합니다. 전체 포트를 공개하는 규칙은 만들지 않습니다. |
-| **권한** | 사용자가 AWS에서 수행할 수 있는 작업의 범위 | `codyssey-infra` IAM 사용자에게 EC2, VPC, Security Group 구성과 비용 확인에 필요한 권한만 부여합니다. 리소스 작업은 서울 Region으로 제한하고, EC2 생성은 `t2.micro`·`t3.micro`만 허용하며 `AdministratorAccess`는 부여하지 않습니다. |
+## 프로젝트 한눈에 보기
+
+<table>
+  <thead>
+    <tr>
+      <th width="18%">영역</th>
+      <th width="27%">정의</th>
+      <th width="55%">구현 내용</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td width="18%"><strong>네트워크</strong></td>
+      <td>컴퓨터와 서비스가 데이터를 주고받도록 연결하는 구조</td>
+      <td><code>10.0.0.0/16</code> VPC 안에 <code>10.0.1.0/24</code> Public Subnet을 만들고, Internet Gateway와 Route Table의 <code>0.0.0.0/0</code> 경로를 연결해 인터넷 통신을 구성합니다.</td>
+    </tr>
+    <tr>
+      <td width="18%"><strong>서버</strong></td>
+      <td>애플리케이션을 실행하고 사용자의 요청을 처리하는 컴퓨터</td>
+      <td>Public Subnet에 Ubuntu 24.04 LTS 기반 <code>t2.micro</code> EC2를 생성하고 Public IP를 할당합니다. <code>user-data</code>로 Nginx를 설치해 <code>/</code>와 <code>/health</code> 응답을 제공합니다.</td>
+    </tr>
+    <tr>
+      <td width="18%"><strong>보안</strong></td>
+      <td>서비스에 허용할 네트워크 접근 범위를 정하는 규칙</td>
+      <td>Security Group에서 HTTP 80은 <code>0.0.0.0/0</code>에 공개하고 SSH 22는 운영자 IP <code>/32</code>에만 허용합니다. 전체 포트를 공개하는 규칙은 만들지 않습니다.</td>
+    </tr>
+    <tr>
+      <td width="18%"><strong>권한</strong></td>
+      <td>사용자가 AWS에서 수행할 수 있는 작업의 범위</td>
+      <td><code>codyssey-infra</code> IAM 사용자에게 EC2, VPC, Security Group 구성과 비용 확인에 필요한 권한만 부여합니다. 리소스 작업은 서울 Region으로 제한하고, EC2 생성은 <code>t2.micro</code>·<code>t3.micro</code>만 허용하며 <code>AdministratorAccess</code>는 부여하지 않습니다.</td>
+    </tr>
+  </tbody>
+</table>
 
 > 더 자세한 용어와 개념은 [AWS 기초 웹 인프라 학습 노트](docs/study-notes.md)에서 확인할 수 있습니다.
 
