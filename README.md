@@ -46,9 +46,19 @@
 
 ![아키텍처 다이어그램](docs/architecture.png)
 
-AWS Region에 VPC를 만들고, 그 안의 Public Subnet에 Nginx가 실행되는 EC2 인스턴스를 배치했습니다. 외부 요청은 다음 경로를 따라 웹 서버에 도달합니다.
+### 외부 요청 흐름
 
-`사용자 → Internet Gateway → Public Subnet → Security Group → EC2 → Nginx`
+인터넷의 사용자가 EC2 웹 서버에 접속하면 요청은 다음 경로를 따라 이동합니다.
+
+`내 컴퓨터 → 인터넷 → Internet Gateway → VPC의 Public Subnet → Security Group → EC2의 Nginx`
+
+이 흐름이 정상적으로 동작하려면 다음 조건이 모두 필요합니다.
+
+- **Public IP**: 외부에서 요청을 보낼 수 있도록 EC2에 할당합니다.
+- **Route Table**: Public Subnet에 `0.0.0.0/0 → Internet Gateway` 경로를 설정합니다.
+- **Internet Gateway**: VPC에 연결해 인터넷과 VPC 사이의 통신을 전달합니다.
+- **Security Group**: 외부에서 들어오는 HTTP 80번 포트 요청을 허용합니다.
+- **Nginx**: EC2에서 요청을 처리하고 `200 OK` 응답을 반환합니다.
 
 ### 인프라 구축 흐름
 
