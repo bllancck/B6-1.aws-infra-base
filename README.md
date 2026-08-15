@@ -70,7 +70,31 @@ AWS Region에 VPC를 만들고, 그 안의 Public Subnet에 Nginx가 실행되�
 
 ---
 
-## 보안 설계
+## 실행 방법
+
+### 사전 준비
+
+AWS CLI v2와 `codyssey-infra` IAM 사용자의 자격 증명이 필요합니다. `aws configure`로 자격 증명을 설정한 뒤 WSL/Linux 셸에서 실행합니다.
+
+### 실행 순서
+
+```bash
+bash scripts/provision.sh      # 인프라 생성
+sleep 90                       # Nginx 설치 대기
+bash scripts/verify.sh         # 요구사항 검증
+bash scripts/cleanup.sh        # 실습 리소스 삭제
+```
+
+> [!NOTE]
+> EC2가 `running` 상태여도 `user-data` 작업은 진행 중일 수 있으므로 Nginx 설치가 끝날 때까지 기다린 후 검증합니다.
+
+### 자동 설정
+
+`provision.sh`는 모든 리소스에 `Project=codyssey-b6-1` 태그를 붙여 검증과 삭제 대상을 구분합니다. [`infra/user-data.sh`](infra/user-data.sh)는 EC2 최초 부팅 시 Nginx를 설치하고 `/`와 `/health` 응답을 설정합니다.
+
+---
+
+## 보안 및 권한
 
 ### Security Group — 네트워크 계층 접근 제어
 
@@ -80,21 +104,7 @@ AWS Region에 VPC를 만들고, 그 안의 Public Subnet에 Nginx가 실행되�
 | 인바운드 | 22/tcp | 운영자 공인 IP `/32` | 서버 전권을 갖는 포트. 공개하면 즉시 무차별 로그인 시도의 표적이 된다 |
 | 아웃바운드 | 전체 | `0.0.0.0/0` | 패키지 설치·보안 업데이트에 필요. 기본값 유지 |
 
-`0.0.0.0/0` 에 대한 전체 포트(`0-65535`) 허용 규칙은 만들지 않았습니다.
-"잠깐 열고 나중에 닫자"가 그대로 남는 사고가 잦기 때문에, 이 규칙의 부재를 [`scripts/test-sg-rules.sh`](scripts/test-sg-rules.sh) 로 단위 테스트하고 `verify.sh` 가 매번 재확인합니다.
-
-SSH 소스는 `provision.sh` 가 실행 시점의 공인 IP(`curl https://checkip.amazonaws.com`)를 자동으로 `/32` 로 넣습니다.
-따라서 공인 IP 가 바뀌면 접속이 끊기는데, 이는 결함이 아니라 의도된 동작입니다. 실습 중 실제로 발생했고([트러블슈팅 Case 3](docs/troubleshooting.md)), 규칙을 넓히는 대신 아래 명령으로 소스를 갱신했습니다.
-
-```bash
-SG=$(aws ec2 describe-security-groups --filters Name=tag:Project,Values=codyssey-b6-1 \
-       --query 'SecurityGroups[0].GroupId' --output text)
-OLD=$(aws ec2 describe-security-groups --group-ids "$SG" \
-       --query "SecurityGroups[0].IpPermissions[?FromPort==\`22\`].IpRanges[].CidrIp" --output text)
-aws ec2 revoke-security-group-ingress --group-id "$SG" --protocol tcp --port 22 --cidr "$OLD"
-aws ec2 authorize-security-group-ingress --group-id "$SG" --protocol tcp --port 22 \
-  --cidr "$(curl -s https://checkip.amazonaws.com)/32"
-```
+전체 포트를 공개하는 규칙은 만들지 않았으며, [`scripts/test-sg-rules.sh`](scripts/test-sg-rules.sh)가 이를 검사합니다. SSH 허용 범위는 `provision.sh` 실행 시점의 운영자 공인 IP `/32`로 자동 설정합니다. IP 변경으로 발생한 접속 문제는 [트러블슈팅 Case 3](docs/troubleshooting.md)에 기록했습니다.
 
 ### IAM — API 호출 권한 제어
 
@@ -107,46 +117,7 @@ aws ec2 authorize-security-group-ingress --group-id "$SG" --protocol tcp --port 
 | 과금 가드레일 | `ec2:RunInstances` 를 `t2.micro` / `t3.micro` 외 타입에 대해 명시적 `Deny` |
 | 정리 확인용 | `ce:GetCostAndUsage` 읽기 권한만 추가 |
 
-액션을 손으로 열거하면 누락이 생깁니다. 실제로 `ec2:ModifySubnetAttribute` 가 빠져 프로비저닝이 중단됐고([트러블슈팅 Case 1](docs/troubleshooting.md)), 스크립트가 호출하는 API 목록을 뽑아 정책과 대조하는 절차를 도입했습니다.
-
-```bash
-grep -oh 'aws ec2 [a-z-]*' scripts/*.sh | sort -u
-```
-
-> [!NOTE]
-> IAM 사용자로 Billing 대시보드를 열려면 루트 계정에서 **계정 설정 → IAM 사용자/역할의 결제 정보 액세스**를 한 번 활성화해야 합니다.
-
-**Security Group 과 IAM 의 차이** — Security Group 은 *패킷* 을 통제하고(어떤 IP 가 어떤 포트로 들어올 수 있는지), IAM 은 *API 호출* 을 통제합니다(누가 어떤 리소스를 만들고 지울 수 있는지).
-IAM 을 아무리 좁혀도 22 포트를 전체 공개하면 서버는 털리고, 반대로 보안 그룹을 완벽히 잠가도 IAM 이 열려 있으면 공격자가 규칙 자체를 바꿔버릴 수 있습니다. 두 계층은 서로를 대체하지 않습니다.
-
----
-
-## 실행 방법
-
-AWS CLI v2 와 `codyssey-infra` 사용자의 자격 증명(`aws configure`)이 필요합니다. 스크립트는 WSL/Linux 셸에서 실행합니다.
-
-```bash
-bash scripts/provision.sh      # VPC → 서브넷 → IGW → 라우트 → SG → 키페어 → EC2
-sleep 90                       # user-data 의 Nginx 설치 완료 대기
-bash scripts/verify.sh         # 요구사항 검증 + docs/verification.log 기록
-bash scripts/cleanup.sh        # 실습 종료 후 생성 역순으로 삭제
-```
-
-모든 리소스에 `Project=codyssey-b6-1` 태그를 붙이고, `verify.sh` 와 `cleanup.sh` 는 이 태그로 대상을 찾습니다.
-따라서 리소스 ID 를 손으로 옮겨 적을 필요가 없고, 정리 누락도 생기지 않습니다.
-
-기본값은 환경변수로 바꿀 수 있습니다.
-
-```bash
-INSTANCE_TYPE=t3.micro SSH_CIDR=203.0.113.10/32 bash scripts/provision.sh
-```
-
-`infra/user-data.sh` 는 인스턴스 최초 부팅 시 1회 실행되어 Nginx 를 설치하고, 기본 사이트를 다음과 같이 교체합니다.
-
-- `/` — 인스턴스의 AZ·프라이빗 IP 를 표시하는 정적 페이지
-- `/health` — 파일이 아닌 `return 200 "OK"` 고정 응답. 디스크 상태와 무관하게 항상 같은 본문을 반환하므로 헬스체크로 적합합니다
-
-`sleep 90` 이 필요한 이유는 `running` 상태가 user-data 완료를 보장하지 않기 때문입니다. 이 차이 때문에 검증이 한 번 실패했습니다([트러블슈팅 Case 2](docs/troubleshooting.md)).
+Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소스를 다루는 API 권한을 제어합니다. 두 설정은 서로 다른 보안 계층이므로 모두 적용해야 합니다. IAM 권한 누락 사례는 [트러블슈팅 Case 1](docs/troubleshooting.md)에 기록했습니다.
 
 ---
 
