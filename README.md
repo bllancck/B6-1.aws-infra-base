@@ -78,15 +78,39 @@ AWS CLI v2와 `codyssey-infra` IAM 사용자의 자격 증명이 필요합니다
 
 ### 실행 순서
 
-```bash
-bash scripts/provision.sh      # 인프라 생성
-sleep 90                       # Nginx 설치 대기
-bash scripts/verify.sh         # 요구사항 검증
-bash scripts/cleanup.sh        # 실습 리소스 삭제
-```
+다음 네 단계를 순서대로 실행합니다.
 
-> [!NOTE]
-> EC2가 `running` 상태여도 `user-data` 작업은 진행 중일 수 있으므로 Nginx 설치가 끝날 때까지 기다린 후 검증합니다.
+1. **인프라 자동 생성**
+
+   ```bash
+   bash scripts/provision.sh
+   ```
+
+   VPC, Public Subnet, Internet Gateway, Route Table, Security Group, Key Pair를 차례대로 만들고, 마지막으로 Nginx가 설치될 EC2 인스턴스를 생성합니다.
+
+2. **Nginx 설치 대기**
+
+   ```bash
+   sleep 90
+   ```
+
+   EC2가 시작된 직후 [`user-data.sh`](infra/user-data.sh)가 내부에서 Nginx를 자동으로 설치합니다. EC2의 `running` 상태는 설치 완료를 의미하지 않으므로 90초 동안 기다립니다.
+
+3. **정상 작동 검증**
+
+   ```bash
+   bash scripts/verify.sh
+   ```
+
+   HTTP 80번 포트 공개 여부, SSH 접속, Nginx 실행 상태, `/health`의 `200 OK` 응답 등 요구사항 11개를 자동으로 점검합니다.
+
+4. **실습 리소스 삭제**
+
+   ```bash
+   bash scripts/cleanup.sh
+   ```
+
+   실습 종료 후 불필요한 과금을 방지하기 위해 EC2, Subnet, VPC 등 생성한 리소스를 의존 관계의 역순으로 삭제합니다.
 
 ### 자동 설정
 
