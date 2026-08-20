@@ -158,16 +158,16 @@ AWS CLI v2와 `codyssey-infra` IAM 사용자의 자격 증명이 필요합니다
 
 SSH에 접속할 수 있는 IP는 `provision.sh`를 실행할 때 현재 운영자의 공인 IP를 확인하여 `/32` 형태로 자동 등록합니다. 운영자의 공인 IP 변경으로 발생한 기존 SSH 접속 차단 문제는 [트러블슈팅 Case 3](docs/troubleshooting.md)에 기록했습니다.
 
-### IAM — API 호출 권한 제어
+### IAM — AWS에서 수행할 수 있는 작업과 범위를 제한
 
-콘솔·CLI 접근은 루트 계정이 아닌 `codyssey-infra` IAM 사용자로만 수행했고, 부여한 정책은 [`infra/iam-policy.json`](infra/iam-policy.json) 입니다.
+콘솔·CLI 접근은 루트 계정이 아닌 `codyssey-infra` IAM 사용자로만 수행했고, 부여한 권한은 [`infra/iam-policy.json`](infra/iam-policy.json) 에 정의했습니다.
 
-| 설계 | 내용 |
+| 설정 | 내용 |
 |------|------|
-| 서비스 범위 | EC2/VPC/보안 그룹 조작에 필요한 액션만 열거. S3·RDS 등 무관한 서비스 권한 없음 |
-| 리전 제한 | `aws:RequestedRegion = ap-northeast-2` 조건으로 다른 리전 호출 차단 |
-| 과금 가드레일 | `ec2:RunInstances` 를 `t2.micro` / `t3.micro` 외 타입에 대해 명시적 `Deny` |
-| 정리 확인용 | `ce:GetCostAndUsage` 읽기 권한만 추가 |
+| 사용 가능한 서비스 | EC2, VPC, Security Group 등 인프라 구성에 필요한 작업만 허용 |
+| 사용 가능 리전 | `aws:RequestedRegion = ap-northeast-2` (서울 리전)에서만 작업할 수 있도록 제한 |
+| 과금 가드레일 | `ec2:RunInstances` 를 `t2.micro` / `t3.micro` 만 생성할 수 있도록 제한 |
+| 비용 확인 | `ce:GetCostAndUsage` 비용 정보 읽기 권한만 허용 |
 
 Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소스를 다루는 API 권한을 제어합니다. 두 설정은 서로 다른 보안 계층이므로 모두 적용해야 합니다. IAM 권한 누락 사례는 [트러블슈팅 Case 1](docs/troubleshooting.md)에 기록했습니다.
 
