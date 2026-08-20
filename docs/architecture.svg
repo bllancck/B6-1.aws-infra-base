@@ -1,15 +1,4 @@
-"""README용 AWS 아키텍처 SVG를 생성한다.
-
-외부 패키지 없이 실행할 수 있다.
-    python scripts/render_architecture.py
-"""
-
-from pathlib import Path
-
-
-OUTPUT = Path(__file__).resolve().parents[1] / "docs" / "architecture.svg"
-
-SVG = r'''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
   <title id="title">AWS 기초 웹 인프라 아키텍처</title>
   <desc id="desc">노트북에서 EC2로 들어오는 SSH 경로와 EC2에서 example.com으로 나가는 curl 경로를 보여주는 VPC 구조도</desc>
   <defs>
@@ -134,13 +123,3 @@ SVG = r'''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" vie
 
   <text x="800" y="975" text-anchor="middle" class="small">파란색: EC2로 들어오는 관리 경로  ·  초록색: EC2에서 인터넷으로 나가는 확인 경로</text>
 </svg>
-'''
-
-
-def main():
-    OUTPUT.write_text(SVG, encoding="utf-8", newline="\n")
-    print(f"saved: {OUTPUT}")
-
-
-if __name__ == "__main__":
-    main()

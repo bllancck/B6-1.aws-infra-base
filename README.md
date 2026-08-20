@@ -44,38 +44,7 @@
 
 ## 아키텍처
 
-```text
-                            인터넷
-                   ┌──────────┴──────────┐
-                   │                     │
-               내 노트북             example.com
-                   │                     ▲
-           SSH :22 │                     │ curl (HTTPS)
-                   ▼                     │
-            Internet Gateway ────────────┘
-                   ↕
-┌──────────────────┴───────────────────────────────┐
-│ VPC · 10.0.0.0/16                               │
-│                                                  │
-│  Route Table · 0.0.0.0/0 → Internet Gateway     │
-│          ↕ Public Subnet에 연결                  │
-│                                                  │
-│  ┌─ Public Subnet · 10.0.1.0/24 ─────────────┐  │
-│  │                                            │  │
-│  │  Security Group                            │  │
-│  │  ├─ SSH :22  ← 내 공인 IP/32              │  │
-│  │  └─ HTTP :80 ← 0.0.0.0/0                  │  │
-│  │          │                                 │  │
-│  │          ▼                                 │  │
-│  │  EC2 · Ubuntu 24.04 LTS · Public IP        │  │
-│  │  └─ Nginx :80 · / · /health               │  │
-│  │                                            │  │
-│  └────────────────────────────────────────────┘  │
-│                                                  │
-└──────────────────────────────────────────────────┘
-```
-
-`↕`는 요청과 응답이 Internet Gateway를 통해 양방향으로 이동한다는 뜻입니다. Public Subnet에서 인터넷으로 나가는 트래픽은 Route Table의 기본 경로를 사용합니다.
+![AWS 웹 인프라 아키텍처](docs/architecture.svg)
 
 ### 통신 흐름
 
@@ -84,13 +53,6 @@
 - **인터넷 연결 확인**: `EC2 → Route Table → Internet Gateway → 인터넷 → example.com` 순서로 `curl` 요청을 보냅니다.
 
 EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 Route Table에는 `0.0.0.0/0 → Internet Gateway` 경로가 필요합니다. Security Group은 HTTP 80번 포트를 전체에 공개하지만, SSH 22번 포트는 운영자의 공인 IP `/32`에만 허용합니다.
-
-<details>
-<summary>리소스와 보안 규칙을 포함한 상세 구성도 보기</summary>
-
-![상세 아키텍처 다이어그램](docs/architecture.png)
-
-</details>
 
 ### 인프라 구축 흐름
 
@@ -271,7 +233,8 @@ OK
 ```
 B6-1.aws-infra-base/
 ├── docs/                           # 제출 문서 및 증빙
-│   ├── architecture.png            # 아키텍처 다이어그램
+│   ├── architecture.svg            # README용 아키텍처 다이어그램
+│   ├── architecture.png            # 상세 아키텍처 다이어그램
 │   ├── study-notes.md              # AWS 기초 용어와 과제 학습 노트
 │   ├── troubleshooting.md          # 트러블슈팅 보고서
 │   ├── cleanup-checklist.md        # 리소스 정리 체크리스트
