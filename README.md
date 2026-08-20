@@ -44,21 +44,53 @@
 
 ## 아키텍처
 
-![아키텍처 다이어그램](docs/architecture.png)
+```text
+                            인터넷
+                   ┌──────────┴──────────┐
+                   │                     │
+               내 노트북             example.com
+                   │                     ▲
+           SSH :22 │                     │ curl (HTTPS)
+                   ▼                     │
+            Internet Gateway ────────────┘
+                   ↕
+┌──────────────────┴───────────────────────────────┐
+│ VPC · 10.0.0.0/16                               │
+│                                                  │
+│  Route Table · 0.0.0.0/0 → Internet Gateway     │
+│          ↕ Public Subnet에 연결                  │
+│                                                  │
+│  ┌─ Public Subnet · 10.0.1.0/24 ─────────────┐  │
+│  │                                            │  │
+│  │  Security Group                            │  │
+│  │  ├─ SSH :22  ← 내 공인 IP/32              │  │
+│  │  └─ HTTP :80 ← 0.0.0.0/0                  │  │
+│  │          │                                 │  │
+│  │          ▼                                 │  │
+│  │  EC2 · Ubuntu 24.04 LTS · Public IP        │  │
+│  │  └─ Nginx :80 · / · /health               │  │
+│  │                                            │  │
+│  └────────────────────────────────────────────┘  │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
 
-### 외부 요청 흐름
+`↕`는 요청과 응답이 Internet Gateway를 통해 양방향으로 이동한다는 뜻입니다. Public Subnet에서 인터넷으로 나가는 트래픽은 Route Table의 기본 경로를 사용합니다.
 
-인터넷의 사용자가 EC2 웹 서버에 접속하면 요청은 다음 경로를 따라 이동합니다.
+### 통신 흐름
 
-`내 컴퓨터 → 인터넷 → Internet Gateway → VPC의 Public Subnet → Security Group → EC2의 Nginx`
+- **서버 관리**: `내 노트북 → 인터넷 → Internet Gateway → Security Group의 22번 포트 → EC2`
+- **웹 서비스 접속**: `브라우저 또는 curl → 인터넷 → Internet Gateway → Security Group의 80번 포트 → EC2의 Nginx`
+- **인터넷 연결 확인**: `EC2 → Route Table → Internet Gateway → 인터넷 → example.com` 순서로 `curl` 요청을 보냅니다.
 
-이 흐름이 정상적으로 동작하려면 다음 조건이 모두 필요합니다.
+EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 Route Table에는 `0.0.0.0/0 → Internet Gateway` 경로가 필요합니다. Security Group은 HTTP 80번 포트를 전체에 공개하지만, SSH 22번 포트는 운영자의 공인 IP `/32`에만 허용합니다.
 
-- **Public IP**: 외부에서 요청을 보낼 수 있도록 EC2에 할당합니다.
-- **Route Table**: Public Subnet에 `0.0.0.0/0 → Internet Gateway` 경로를 설정합니다.
-- **Internet Gateway**: VPC에 연결해 인터넷과 VPC 사이의 통신을 전달합니다.
-- **Security Group**: 외부에서 들어오는 HTTP 80번 포트 요청을 허용합니다.
-- **Nginx**: EC2에서 요청을 처리하고 `200 OK` 응답을 반환합니다.
+<details>
+<summary>리소스와 보안 규칙을 포함한 상세 구성도 보기</summary>
+
+![상세 아키텍처 다이어그램](docs/architecture.png)
+
+</details>
 
 ### 인프라 구축 흐름
 
