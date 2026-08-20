@@ -131,12 +131,12 @@
 
     <rect x="420" y="985" width="420" height="65" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
     <path d="M450 1018 H505" fill="none" stroke="#2563eb" stroke-width="6" stroke-linecap="round" marker-end="url(#arrow-blue)"/>
-    <text x="535" y="1011" font-size="20" font-weight="800" fill="#2563eb">인바운드 · 파란색</text>
+    <text x="535" y="1011" font-size="20" font-weight="800" fill="#2563eb">인바운드</text>
     <text x="535" y="1037" font-size="17" fill="#2563eb">내 노트북 → EC2</text>
 
     <rect x="870" y="985" width="420" height="65" rx="16" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
     <path d="M900 1018 H955" fill="none" stroke="#16a34a" stroke-width="6" stroke-linecap="round" marker-end="url(#arrow-green)"/>
-    <text x="985" y="1011" font-size="20" font-weight="800" fill="#15803d">아웃바운드 · 초록색</text>
+    <text x="985" y="1011" font-size="20" font-weight="800" fill="#15803d">아웃바운드</text>
     <text x="985" y="1037" font-size="17" fill="#15803d">EC2 → example.com</text>
   </g>
 </svg>

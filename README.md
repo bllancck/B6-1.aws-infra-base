@@ -46,8 +46,6 @@
 
 ![AWS 웹 인프라 아키텍처](docs/architecture.svg)
 
-Nginx는 별도의 AWS 리소스가 아니라 EC2 인스턴스의 운영체제에 설치되어 HTTP 요청을 처리하는 웹 서버입니다.
-
 ### 통신 흐름
 
 - **서버 관리**: `내 노트북 → 인터넷 → Internet Gateway → Security Group의 22번 포트 → EC2`
