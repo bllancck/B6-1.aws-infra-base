@@ -9,9 +9,9 @@ from pathlib import Path
 
 OUTPUT = Path(__file__).resolve().parents[1] / "docs" / "architecture.svg"
 
-SVG = r'''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+SVG = r'''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1100" viewBox="0 0 1600 1100" role="img" aria-labelledby="title desc">
   <title id="title">AWS 기초 웹 인프라 아키텍처</title>
-  <desc id="desc">노트북에서 EC2로 들어오는 SSH 경로와 EC2에서 example.com으로 나가는 curl 경로를 보여주는 VPC 구조도</desc>
+  <desc id="desc">EC2 내부에서 Nginx가 실행되는 관계와 노트북에서 EC2로 들어오는 SSH 경로, EC2에서 example.com으로 나가는 curl 경로를 보여주는 VPC 구조도</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.08"/>
@@ -31,7 +31,7 @@ SVG = r'''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" vie
     </style>
   </defs>
 
-  <rect width="1600" height="1000" fill="#f8fafc"/>
+  <rect width="1600" height="1100" fill="#f8fafc"/>
 
   <!-- Laptop -->
   <g transform="translate(105 85)">
@@ -92,17 +92,19 @@ SVG = r'''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" vie
     <text x="1120" y="626" font-size="21" font-weight="800" class="mono">0.0.0.0/0 → IGW</text>
   </g>
 
-  <!-- EC2 card -->
+  <!-- EC2 인스턴스와 그 안에서 실행되는 Nginx -->
   <g filter="url(#shadow)">
-    <rect x="265" y="610" width="510" height="210" rx="22" fill="#fff" stroke="#cbd5e1" stroke-width="3"/>
-    <rect x="300" y="646" width="110" height="90" rx="18" fill="#f97316"/>
-    <text x="355" y="701" text-anchor="middle" font-size="28" font-weight="800" fill="#fff">EC2</text>
-    <text x="445" y="670" font-size="27" font-weight="800">EC2 · codyssey-web</text>
-    <text x="445" y="706" class="small">Ubuntu 24.04 LTS · Public IP</text>
-    <polygon points="335,770 365,752 395,770 395,804 365,822 335,804" fill="#16a34a"/>
-    <text x="365" y="797" text-anchor="middle" font-size="27" font-weight="800" fill="#fff">N</text>
-    <text x="420" y="783" font-size="25" font-weight="800">Nginx</text>
-    <text x="420" y="812" class="small">:80 · / · /health</text>
+    <rect x="265" y="600" width="510" height="240" rx="22" fill="#fff" stroke="#f97316" stroke-width="3"/>
+    <rect x="300" y="630" width="82" height="66" rx="14" fill="#f97316"/>
+    <text x="341" y="671" text-anchor="middle" font-size="24" font-weight="800" fill="#fff">EC2</text>
+    <text x="415" y="653" font-size="28" font-weight="800">EC2 인스턴스</text>
+    <text x="415" y="687" class="small">Ubuntu 24.04 LTS · Public IP</text>
+
+    <rect x="300" y="720" width="440" height="88" rx="16" fill="#f0fdf4" stroke="#16a34a" stroke-width="3"/>
+    <polygon points="330,754 358,738 386,754 386,786 358,802 330,786" fill="#16a34a"/>
+    <text x="358" y="778" text-anchor="middle" font-size="24" font-weight="800" fill="#fff">N</text>
+    <text x="410" y="754" font-size="25" font-weight="800" fill="#15803d">Nginx</text>
+    <text x="410" y="788" font-size="19" fill="#15803d">EC2 내부에서 실행 · :80 · / · /health</text>
   </g>
 
   <!-- Security Group card -->
@@ -123,16 +125,31 @@ SVG = r'''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" vie
   <rect x="370" y="93" width="205" height="44" rx="22" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
   <text x="472" y="122" text-anchor="middle" font-size="19" font-weight="800" fill="#2563eb">SSH :22 · 인바운드</text>
   <path d="M760 225 V340" fill="none" stroke="#2563eb" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-blue)"/>
-  <path d="M742 433 V585 H520 V602" fill="none" stroke="#2563eb" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
+  <path d="M742 433 V575 H220 V650 H257" fill="none" stroke="#2563eb" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
 
   <!-- Outbound curl path -->
-  <path d="M640 610 V585 H858 V433" fill="none" stroke="#16a34a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-green)"/>
+  <path d="M640 600 V575 H858 V433" fill="none" stroke="#16a34a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-green)"/>
   <path d="M858 340 V225" fill="none" stroke="#16a34a" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-green)"/>
   <path d="M950 145 H1285" fill="none" stroke="#16a34a" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-green)"/>
   <rect x="1015" y="93" width="245" height="44" rx="22" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
   <text x="1138" y="122" text-anchor="middle" font-size="19" font-weight="800" fill="#15803d">curl HTTPS · 아웃바운드</text>
 
-  <text x="800" y="975" text-anchor="middle" class="small">파란색: EC2로 들어오는 관리 경로  ·  초록색: EC2에서 인터넷으로 나가는 확인 경로</text>
+  <!-- Traffic legend -->
+  <g filter="url(#shadow)">
+    <rect x="175" y="965" width="1250" height="105" rx="22" fill="#fff" stroke="#cbd5e1" stroke-width="3"/>
+    <text x="215" y="1008" font-size="22" font-weight="800">트래픽 흐름</text>
+    <text x="215" y="1040" class="small">화살표 색과 방향</text>
+
+    <rect x="420" y="985" width="420" height="65" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+    <path d="M450 1018 H505" fill="none" stroke="#2563eb" stroke-width="6" stroke-linecap="round" marker-end="url(#arrow-blue)"/>
+    <text x="535" y="1011" font-size="20" font-weight="800" fill="#2563eb">인바운드 · 파란색</text>
+    <text x="535" y="1037" font-size="17" fill="#2563eb">내 노트북 → EC2 · SSH :22</text>
+
+    <rect x="870" y="985" width="420" height="65" rx="16" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+    <path d="M900 1018 H955" fill="none" stroke="#16a34a" stroke-width="6" stroke-linecap="round" marker-end="url(#arrow-green)"/>
+    <text x="985" y="1011" font-size="20" font-weight="800" fill="#15803d">아웃바운드 · 초록색</text>
+    <text x="985" y="1037" font-size="17" fill="#15803d">EC2 → example.com · curl HTTPS</text>
+  </g>
 </svg>
 '''
 
