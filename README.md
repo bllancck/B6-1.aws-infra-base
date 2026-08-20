@@ -146,7 +146,7 @@ AWS CLI v2와 `codyssey-infra` IAM 사용자의 자격 증명이 필요합니다
 
 ## 보안 및 권한
 
-### Security Group — 네트워크 계층 접근 제어
+### Security Group — 서버로 들어오고 나가는 통신 제한
 
 | 방향 | 포트 | 허용 대상 | 설정 이유 |
 |------|------|-------------|------|
@@ -156,9 +156,7 @@ AWS CLI v2와 `codyssey-infra` IAM 사용자의 자격 증명이 필요합니다
 
 `0.0.0.0/0`에서 모든 포트에 접근할 수 있도록 하는 규칙은 만들지 않았으며, [`scripts/test-sg-rules.sh`](scripts/test-sg-rules.sh)에서 이를 검사합니다.
 
-SSH에 접속할 수 있는 IP는 `provision.sh`를 실행할 때 현재 운영자의 공인 IP를 확인하여 `/32` 형태로 자동 등록합니다.
-
-운영자의 공인 IP 변경으로 발생한 기존 SSH 접속 차단 문제는 [트러블슈팅 Case 3](docs/troubleshooting.md)에 기록했습니다.
+SSH에 접속할 수 있는 IP는 `provision.sh`를 실행할 때 현재 운영자의 공인 IP를 확인하여 `/32` 형태로 자동 등록합니다. 운영자의 공인 IP 변경으로 발생한 기존 SSH 접속 차단 문제는 [트러블슈팅 Case 3](docs/troubleshooting.md)에 기록했습니다.
 
 ### IAM — API 호출 권한 제어
 
