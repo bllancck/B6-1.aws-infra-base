@@ -100,7 +100,59 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 
 ### 사전 준비
 
-AWS CLI v2와 `codyssey-infra` IAM 사용자의 자격 증명이 필요합니다. `aws configure`로 자격 증명을 설정한 뒤 WSL/Linux 셸에서 실행합니다.
+아래 준비를 마친 뒤 프로젝트 루트 디렉터리에서 스크립트를 실행합니다.
+
+1. **AWS IAM 사용자와 권한 준비**
+
+   AWS 루트 계정 대신 `codyssey-infra` IAM 사용자를 준비합니다. 이 사용자에게는 [`infra/iam-policy.json`](infra/iam-policy.json)의 정책이 연결되어 있어야 하며, CLI 로그인에 사용할 **Access Key ID**와 **Secret Access Key**가 필요합니다.
+
+   > 자격 증명은 README나 소스 코드에 직접 적거나 Git 저장소에 커밋하지 않습니다.
+
+2. **필수 도구 설치**
+
+   스크립트는 Bash를 사용하므로 Windows에서는 **WSL**, macOS/Linux에서는 기본 터미널을 사용합니다. 해당 환경에 다음 도구가 설치되어 있어야 합니다.
+
+   - AWS CLI v2: AWS 리소스 생성·조회·삭제
+   - `curl`: 현재 공인 IP와 웹 서버 응답 확인
+   - OpenSSH 클라이언트(`ssh`): EC2 내부 상태 확인
+
+   다음 명령으로 설치 여부를 확인할 수 있습니다.
+
+   ```bash
+   aws --version
+   bash --version
+   curl --version
+   ssh -V
+   ```
+
+3. **AWS CLI 자격 증명 설정**
+
+   WSL/Linux 셸에서 아래 명령을 실행하고 IAM 사용자의 자격 증명을 입력합니다. 기본 리전은 이 프로젝트가 사용하는 서울 리전 `ap-northeast-2`, 출력 형식은 `json`으로 설정합니다.
+
+   ```bash
+   aws configure
+   # AWS Access Key ID: 발급받은 Access Key ID
+   # AWS Secret Access Key: 발급받은 Secret Access Key
+   # Default region name: ap-northeast-2
+   # Default output format: json
+   ```
+
+   설정이 올바른지 다음 명령으로 확인합니다. 오류 없이 IAM 사용자 정보가 출력되면 준비가 완료된 것입니다.
+
+   ```bash
+   aws sts get-caller-identity
+   ```
+
+4. **프로젝트 디렉터리로 이동**
+
+   아래 명령을 실행했을 때 `infra`, `scripts`, `README.md`가 보이는 위치여야 합니다.
+
+   ```bash
+   cd B6-1.aws-infra-base
+   ls
+   ```
+
+> `provision.sh`는 실행한 컴퓨터의 현재 공인 IP를 확인해 그 IP에만 SSH 접속을 허용합니다. 따라서 실행 중에는 인터넷 연결이 필요하며, 실행 후 공인 IP가 바뀌면 SSH 접속이 제한될 수 있습니다.
 
 ### 실행 순서
 
@@ -262,4 +314,4 @@ B6-1.aws-infra-base/
 - 프리티어 범위 내에서 진행합니다. 서울 리전 프리티어 대상인 `t2.micro` 를 기본값으로 두었고, EBS 는 8 GiB 로 시작합니다
 - 루트 계정으로는 콘솔·CLI 에 접근하지 않으며, `codyssey-infra` IAM 사용자만 사용합니다
 - 키페어 개인키는 생성 시점에만 내려받을 수 있어 재발급이 불가능합니다. `~/.ssh/codyssey-key.pem` 에 권한 `400` 으로 보관하며 저장소에 커밋하지 않습니다
-- 단일 AZ · 단일 인스턴스 구성이므로 고가용성은 범위에 없습니다. ALB, Auto Scaling, RDS, HTTPS(보너스 과제)는 구현하지 않았습니다
+- 단일 AZ · 단일 인스턴스 구성이므로 고가용성은 범위에 없습니다. ALB, Auto Scaling, RDS, HTTPS는 구현하지 않았습니다.
