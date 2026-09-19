@@ -44,7 +44,7 @@
 
 ## 아키텍처
 
-![AWS 웹 인프라 아키텍처](docs/architecture.svg)
+![AWS 웹 인프라 아키텍처](docs/images/aws-infra-architecture.png)
 
 ### 통신 흐름
 
@@ -287,13 +287,12 @@ OK
 ```
 B6-1.aws-infra-base/
 ├── docs/                           # 제출 문서 및 증빙
-│   ├── architecture.svg            # README용 아키텍처 다이어그램
-│   ├── architecture.png            # 상세 아키텍처 다이어그램
 │   ├── study-notes.md              # AWS 기초 용어와 과제 학습 노트
 │   ├── troubleshooting.md          # 트러블슈팅 보고서
 │   ├── cleanup-checklist.md        # 리소스 정리 체크리스트
 │   ├── verification.log            # verify.sh 실행 기록
-│   └── images/                     # 접속·과금 증빙 스크린샷
+│   └── images/                     # 문서용 이미지와 증빙
+│       └── aws-infra-architecture.png # README용 아키텍처 다이어그램
 ├── infra/                          # 인프라 정의
 │   ├── iam-policy.json             # IAM 사용자에 부여한 최소 권한 정책
 │   └── user-data.sh                # EC2 부팅 시 Nginx 설치·설정

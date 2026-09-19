@@ -1,4 +1,14 @@
 B6-1.pdf
+infra-execution-log.md
 
 # 키페어 개인키는 절대 커밋하지 않는다 (재발급 불가)
 *.pem
+
+# 로컬 전용 문서
+/평가문항.md
+/implementation_plan.md
+/concept.md
+
+# 교체 전 아키텍처 이미지는 로컬에만 보관
+/docs/architecture.png
+/docs/architecture.svg
