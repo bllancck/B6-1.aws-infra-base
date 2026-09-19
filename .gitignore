@@ -3,6 +3,7 @@ infra-execution-log.md
 
 # 키페어 개인키는 절대 커밋하지 않는다 (재발급 불가)
 *.pem
+*:Zone.Identifier
 
 # 로컬 전용 문서
 /평가문항.md

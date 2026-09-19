@@ -165,7 +165,7 @@ aws ec2 describe-instance-types \
    bash scripts/cleanup.sh
    ```
 
-   실습 종료 후 불필요한 과금을 방지하기 위해 EC2, Subnet, VPC 등 생성한 리소스를 의존 관계의 역순으로 삭제합니다.
+   실습 종료 후 불필요한 과금을 방지하기 위해 EC2, Subnet, VPC 등 생성한 리소스를 의존 관계의 역순으로 삭제합니다. 수동 AWS CLI 정리 결과와 최종 확인 항목은 [리소스 정리 체크리스트](docs/cleanup-checklist.md)에 기록했습니다.
 
 ### 자동 설정
 
@@ -219,13 +219,13 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 | 아키텍처 다이어그램 | [AWS 인프라 구성과 트래픽 흐름](docs/images/architecture.png) |
 | 외부 접속 검증 | 방식 A(브라우저), [접속 화면](docs/images/web-access.png), [자동 검증 기록](docs/verification.log) |
 | 트러블슈팅 보고서 | [실제 장애 3건과 진단 절차](docs/troubleshooting.md) |
-| 리소스 정리 체크리스트 | [삭제 순서, 조회 명령과 완료 기록](docs/cleanup-checklist.md) |
+| 리소스 정리 체크리스트 | [삭제 순서, 수동 검증과 완료 기록](docs/cleanup-checklist.md) |
 
 ## 리소스 정리
 
-[`scripts/cleanup.sh`](scripts/cleanup.sh)는 EC2 종료 후 EIP, 잔여 EBS, Route Table, IGW, Subnet, Security Group, VPC, AWS 키페어 순으로 프로젝트 태그가 붙은 리소스를 정리하고 남은 항목을 조회합니다. 2026-08-22의 삭제 결과는 [정리 체크리스트](docs/cleanup-checklist.md)에 기록되어 있습니다.
+저장소의 [`scripts/cleanup.sh`](scripts/cleanup.sh)는 EC2 종료 후 EIP, 잔여 EBS, Route Table, IGW, Subnet, Security Group, VPC, AWS 키페어 순으로 프로젝트 태그가 붙은 리소스를 정리하고 남은 항목을 조회합니다. 이번 실습에서는 2026-09-20에 AWS CLI로 리소스 의존 관계를 고려해 직접 삭제하고 조회 결과를 확인했으며, 상세 결과는 [리소스 정리 체크리스트](docs/cleanup-checklist.md)에 기록했습니다.
 
-루트 볼륨은 `DeleteOnTermination=true`이고 Elastic IP는 생성하지 않습니다. AWS 키페어를 삭제해도 로컬 개인키 `~/.ssh/codyssey-key.pem`은 자동 삭제되지 않으므로 더 이상 필요 없다면 별도로 제거합니다.
+루트 볼륨은 `DeleteOnTermination=true`이고 Elastic IP는 생성하지 않았습니다. AWS 키페어 삭제와 별개로 남는 로컬 개인키 `~/.ssh/codyssey-key.pem`도 수동으로 삭제했으며, Billing Dashboard에서 최종 과금 항목을 확인했습니다.
 
 ---
 
