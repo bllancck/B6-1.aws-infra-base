@@ -194,9 +194,9 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 
 ## 정상 동작 확인
 
-외부 접속은 방식 **(B) `GET /health`**로 검증했습니다. 2026-08-22 실행에서 `200 OK`, 본문 `OK`를 확인했고 자동 검증 11개가 모두 통과했습니다. 해당 EC2는 검증 후 삭제했습니다.
+외부 접속은 방식 **(A) 브라우저 접속**으로 검증했습니다. 퍼블릭 IP `3.34.96.150`의 Nginx 페이지가 정상적으로 표시됐으며, 별도 자동 검증에서는 네트워크·보안·웹 서버 항목 11개가 모두 통과했습니다.
 
-- [헬스체크 접속 화면](docs/images/health-check.png)
+- [브라우저 접속 화면](docs/images/web-access.png)
 - [전체 자동 검증 로그](docs/verification.log)
 
 ## 과제 결과물
@@ -204,7 +204,7 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 | 결과물 | 구현 및 확인 위치 |
 |--------|-------------------|
 | 아키텍처 다이어그램 | [AWS 인프라 구성과 트래픽 흐름](docs/images/architecture.png) |
-| 외부 접속 검증 | 방식 B(`/health`), [접속 화면](docs/images/health-check.png), [자동 검증 기록](docs/verification.log) |
+| 외부 접속 검증 | 방식 A(브라우저), [접속 화면](docs/images/web-access.png), [자동 검증 기록](docs/verification.log) |
 | 트러블슈팅 보고서 | [실제 장애 3건과 진단 절차](docs/troubleshooting.md) |
 | 리소스 정리 체크리스트 | [삭제 순서, 조회 명령과 완료 기록](docs/cleanup-checklist.md) |
 
@@ -226,7 +226,7 @@ B6-1.aws-infra-base/
 │   ├── verification.log            # verify.sh 실행 기록
 │   └── images/
 │       ├── architecture.png         # 아키텍처 다이어그램
-│       └── health-check.png         # 외부 접속 결과
+│       └── web-access.png           # 외부 접속 결과
 ├── infra/                          # 인프라 정의
 │   ├── iam-policy.json             # IAM 사용자에 부여한 최소 권한 정책
 │   └── user-data.sh                # EC2 부팅 시 Nginx 설치·설정
