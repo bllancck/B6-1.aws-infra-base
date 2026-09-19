@@ -8,6 +8,7 @@ infra-execution-log.md
 /평가문항.md
 /implementation_plan.md
 /concept.md
+/docs/study-notes.md
 
-# 아키텍처 SVG 생성 도구의 로컬 출력
+# 로컬 전용 아키텍처 SVG
 /docs/architecture.svg

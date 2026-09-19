@@ -6,7 +6,7 @@ AWS 서울 리전의 Public Subnet에 둔 EC2에 Nginx를 배포하고, 인프�
 
 ## 아키텍처
 
-![AWS 웹 인프라 아키텍처](docs/architecture.png)
+![AWS 웹 인프라 아키텍처](docs/images/architecture.png)
 
 ### 통신 흐름
 
@@ -203,7 +203,7 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 
 | 결과물 | 구현 및 확인 위치 |
 |--------|-------------------|
-| 아키텍처 다이어그램 | [AWS 인프라 구성과 트래픽 흐름](docs/architecture.png) |
+| 아키텍처 다이어그램 | [AWS 인프라 구성과 트래픽 흐름](docs/images/architecture.png) |
 | 외부 접속 검증 | 방식 B(`/health`), [접속 화면](docs/images/health-check.png), [자동 검증 기록](docs/verification.log) |
 | 트러블슈팅 보고서 | [실제 장애 3건과 진단 절차](docs/troubleshooting.md) |
 | 리소스 정리 체크리스트 | [삭제 순서, 조회 명령과 완료 기록](docs/cleanup-checklist.md) |
@@ -221,12 +221,11 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 ```
 B6-1.aws-infra-base/
 ├── docs/                           # 제출 문서 및 증빙
-│   ├── architecture.png            # 아키텍처 다이어그램
-│   ├── study-notes.md              # AWS 기초 용어와 과제 학습 노트
 │   ├── troubleshooting.md          # 트러블슈팅 보고서
 │   ├── cleanup-checklist.md        # 리소스 정리 체크리스트
 │   ├── verification.log            # verify.sh 실행 기록
 │   └── images/
+│       ├── architecture.png         # 아키텍처 다이어그램
 │       └── health-check.png         # 외부 접속 결과
 ├── infra/                          # 인프라 정의
 │   ├── iam-policy.json             # IAM 사용자에 부여한 최소 권한 정책
@@ -236,7 +235,6 @@ B6-1.aws-infra-base/
 │   ├── provision.sh                # 인프라 생성
 │   ├── verify.sh                   # 요구사항 검증
 │   ├── cleanup.sh                  # 리소스 삭제 (생성 역순)
-│   ├── test-sg-rules.sh            # 보안 그룹 판정 로직 단위 테스트
-│   └── render_architecture.py      # 아키텍처 SVG 생성 도구
+│   └── test-sg-rules.sh            # 보안 그룹 판정 로직 단위 테스트
 └── README.md
 ```
