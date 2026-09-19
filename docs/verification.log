@@ -1,21 +1,21 @@
-검증 시각: 2026-08-22 19:28:52 KST
-대상: i-03bc357db0b1ceaca  /  subnet-05222c94e3865cfef  /  퍼블릭 IPv4 43.203.231.184
+검증 시각: 2026-09-20 04:29:31 KST
+대상: i-0596beec7d910700c  /  subnet-01eb36e8fd4634e27  /  퍼블릭 IPv4 3.34.96.150
 
-[19:28:55] 1. 네트워크 구성
+[04:29:41] 1. 네트워크 구성
   PASS  라우트 0.0.0.0/0 대상               igw
   PASS  서브넷 퍼블릭 IPv4 자동 할당   True
 
-[19:28:56] 2. 접근 제어 (보안 그룹 인바운드)
+[04:29:44] 2. 접근 제어 (보안 그룹 인바운드)
   PASS  HTTP 80 ← 0.0.0.0/0 허용             yes
   PASS  SSH 22 ← 0.0.0.0/0 노출              no
   PASS  0.0.0.0/0 전체 포트 허용 규칙    no
 
-[19:28:57] 3. 외부 접속 검증
-  PASS  GET http://43.203.231.184/               200
-  PASS  GET http://43.203.231.184/health         200
+[04:29:46] 3. 외부 접속 검증
+  PASS  GET http://3.34.96.150/                  200
+  PASS  GET http://3.34.96.150/health            200
   PASS  /health 응답 본문                    OK
 
-[19:28:57] 4. 인스턴스 내부 상태 (SSH)
+[04:29:46] 4. 인스턴스 내부 상태 (SSH)
   PASS  nginx 서비스 상태                   active
   PASS  curl http://localhost                    200
   PASS  curl https://example.com (아웃바운드) 200

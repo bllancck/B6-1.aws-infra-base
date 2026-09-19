@@ -120,7 +120,7 @@ aws ec2 describe-instance-types \
 
 ### 실행 순서
 
-다음 네 단계를 순서대로 실행합니다.
+다음 다섯 단계를 순서대로 실행합니다.
 
 1. **인프라 자동 생성**
 
@@ -141,7 +141,17 @@ aws ec2 describe-instance-types \
 
    EC2가 시작된 직후 [`user-data.sh`](infra/user-data.sh)가 Nginx를 설치합니다. EC2의 `running` 상태는 초기화 완료를 의미하지 않으므로 `cloud-init`이 끝난 뒤 검증합니다. SSH가 아직 준비되지 않았다면 잠시 후 같은 명령을 다시 실행합니다.
 
-3. **정상 작동 검증**
+3. **정상 작동 확인 — 방식 (A) 브라우저 접속**
+
+   로컬 컴퓨터의 브라우저 주소창에 다음 URL을 입력합니다. `<퍼블릭IP>`는 `provision.sh`가 출력한 Public IPv4로 바꿉니다.
+
+   ```text
+   http://<퍼블릭IP>
+   ```
+
+   Nginx의 `Hello Cloud — Codyssey B6-1` 페이지가 표시되면 외부 접속이 정상입니다. 접속 URL과 페이지를 확인할 수 있도록 화면을 캡처해 접속 증빙으로 남깁니다.
+
+4. **추가 자동 검증**
 
    ```bash
    bash scripts/verify.sh
@@ -149,7 +159,7 @@ aws ec2 describe-instance-types \
 
    네트워크, 보안 그룹, 외부 HTTP 응답, SSH, Nginx와 아웃바운드 통신에 관한 11개 항목을 자동으로 점검합니다. 결과는 `docs/verification.log`에 덮어씁니다. IAM 정책 연결 여부와 리소스 삭제 완료 여부는 이 스크립트의 검증 범위가 아닙니다.
 
-4. **실습 리소스 삭제**
+5. **실습 리소스 삭제**
 
    ```bash
    bash scripts/cleanup.sh
@@ -194,10 +204,13 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 
 ## 정상 동작 확인
 
-외부 접속은 방식 **(A) 브라우저 접속**으로 검증했습니다. 퍼블릭 IP `3.34.96.150`의 Nginx 페이지가 정상적으로 표시됐으며, 별도 자동 검증에서는 네트워크·보안·웹 서버 항목 11개가 모두 통과했습니다.
+외부 접속 검증은 방식 **(A) 브라우저 접속**으로 진행했습니다.
 
-- [브라우저 접속 화면](docs/images/web-access.png)
-- [전체 자동 검증 로그](docs/verification.log)
+- 접속 URL: `http://3.34.96.150`
+- 확인 결과: 브라우저에 Nginx의 `Hello Cloud — Codyssey B6-1` 페이지가 정상적으로 표시됨
+- 접속 증빙: [브라우저 접속 화면](docs/images/web-access.png)
+
+네트워크·보안·웹 서버의 세부 항목은 별도로 자동 검증했으며, 11개 항목이 모두 통과한 결과는 [전체 자동 검증 로그](docs/verification.log)에서 확인할 수 있습니다.
 
 ## 과제 결과물
 
