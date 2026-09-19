@@ -1,44 +1,6 @@
 # AWS 기초 웹 인프라 구축
 
-AWS 서울 리전에 VPC와 Public Subnet을 구성하고, Ubuntu EC2 한 대에 Nginx를 배포해 외부에서 접근 가능한 웹 서비스를 만드는 프로젝트입니다. AWS CLI 스크립트로 인프라 생성, 요구사항 검증, 리소스 정리를 반복할 수 있으며 Security Group과 IAM 정책으로 네트워크 접근 및 AWS API 권한을 제한합니다.
-
----
-
-## 프로젝트 한눈에 보기
-
-<table>
-  <thead>
-    <tr>
-      <th width="15%">영역</th>
-      <th width="27%">정의</th>
-      <th width="58%">구현 내용</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td width="15%"><strong>네트워크</strong></td>
-      <td>컴퓨터와 서비스가 데이터를 주고받도록 연결하는 구조</td>
-      <td><code>10.0.0.0/16</code> VPC 안에 <code>10.0.1.0/24</code> Public Subnet을 만들고, Internet Gateway와 Route Table의 <code>0.0.0.0/0</code> 경로를 연결해 인터넷 통신을 구성합니다.</td>
-    </tr>
-    <tr>
-      <td width="15%"><strong>서버</strong></td>
-      <td>애플리케이션을 실행하고 사용자의 요청을 처리하는 컴퓨터</td>
-      <td>Public Subnet에 Ubuntu 24.04 LTS 기반 micro급 EC2를 생성하고 Public IP를 할당합니다. <code>user-data</code>로 Nginx를 설치해 <code>/</code>와 <code>/health</code> 응답을 제공합니다.</td>
-    </tr>
-    <tr>
-      <td width="15%"><strong>보안</strong></td>
-      <td>서비스에 허용할 네트워크 접근 범위를 정하는 규칙</td>
-      <td>Security Group에서 HTTP 80은 <code>0.0.0.0/0</code>에 공개하고 SSH 22는 운영자 IP <code>/32</code>에만 허용합니다. 전체 포트를 공개하는 규칙은 만들지 않습니다.</td>
-    </tr>
-    <tr>
-      <td width="15%"><strong>권한</strong></td>
-      <td>사용자가 AWS에서 수행할 수 있는 작업의 범위</td>
-      <td><code>codyssey-infra</code> IAM 사용자에게 EC2, VPC, Security Group 구성과 비용 확인에 필요한 권한만 부여합니다. 리소스 작업은 서울 Region으로 제한하고, EC2 생성은 <code>t2.micro</code>·<code>t3.micro</code>만 허용하며 <code>AdministratorAccess</code>는 부여하지 않습니다.</td>
-    </tr>
-  </tbody>
-</table>
-
-> 더 자세한 용어와 개념은 [AWS 기초 웹 인프라 학습 노트](docs/study-notes.md)에서 확인할 수 있습니다.
+AWS 서울 리전의 Public Subnet에 둔 EC2에 Nginx를 배포하고, 인프라 생성·검증·정리를 AWS CLI로 자동화한 프로젝트입니다.
 
 ---
 
@@ -48,25 +10,46 @@ AWS 서울 리전에 VPC와 Public Subnet을 구성하고, Ubuntu EC2 한 대에
 
 ### 통신 흐름
 
-- **서버 관리**: `내 노트북 → 인터넷 → Internet Gateway → Security Group의 22번 포트 → EC2`
-- **웹 서비스 접속**: `브라우저 또는 curl → 인터넷 → Internet Gateway → Security Group의 80번 포트 → EC2의 Nginx`
-- **인터넷 연결 확인**: `EC2 → Route Table → Internet Gateway → 인터넷 → example.com` 순서로 `curl` 요청을 보냅니다.
-
-EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 Route Table에는 `0.0.0.0/0 → Internet Gateway` 경로가 필요합니다. Security Group은 HTTP 80번 포트를 전체에 공개하지만, SSH 22번 포트는 운영자의 공인 IP `/32`에만 허용합니다.
+- **웹 요청**: `사용자 → Internet Gateway → Public Subnet → Security Group(80) → EC2의 Nginx`
+- **서버 관리**: `운영자 → Internet Gateway → Security Group(22, 운영자 IP/32) → EC2`
+- **아웃바운드**: `EC2 → Route Table(0.0.0.0/0) → Internet Gateway → 인터넷`
 
 ## 인프라 구성
 
-| 영역 | 구성 |
+| AWS 리소스 | 설정 | 역할 |
+|-------------|------|------|
+| **VPC** | `10.0.0.0/16` | 프로젝트 전용 가상 네트워크 |
+| **Public Subnet** | `10.0.1.0/24`, `ap-northeast-2a` | 퍼블릭 EC2 배치 영역, 퍼블릭 IPv4 자동 할당 |
+| **Internet Gateway** | VPC에 연결 | VPC와 인터넷 연결 |
+| **Route Table** | `0.0.0.0/0 → Internet Gateway` | Public Subnet의 인터넷 경로 |
+| **EC2** | Ubuntu 24.04 LTS, micro급 | Nginx 웹 서버 실행 |
+| **EBS** | gp3 8 GiB, `DeleteOnTermination=true` | EC2 루트 스토리지 |
+| **Security Group** | HTTP 80 전체 허용, SSH 22 운영자 IP `/32` | EC2 인바운드 접근 제어 |
+| **IAM** | `codyssey-infra`, 서울 리전 및 `t2.micro`·`t3.micro` 제한 | AWS API 최소 권한 적용 |
+| **Nginx** | `/`, `/health` | 웹 페이지 및 헬스체크 응답 |
+
+---
+
+## 실행 환경 및 제약 사항
+
+| 구분 | 내용 |
 |------|------|
-| **배포 위치** | AWS 서울 Region(`ap-northeast-2`), AZ `ap-northeast-2a` |
-| **네트워크** | VPC `10.0.0.0/16` 안에 Public Subnet `10.0.1.0/24` 구성 |
-| **인터넷 연결** | Internet Gateway와 `0.0.0.0/0` Route 연결, 퍼블릭 IPv4 자동 할당 |
-| **서버** | EC2 micro급(`t2.micro` 기본값, 환경변수로 변경 가능), Ubuntu 24.04 LTS |
-| **스토리지** | EBS gp3 8 GiB, EC2 인스턴스 삭제 시 함께 삭제 |
-| **웹 서비스** | Nginx가 HTTP 80번 포트에서 `/`와 `/health` 응답 제공 |
-| **접근 제어** | HTTP 80은 전체 공개, SSH 22는 운영자 IP `/32`에만 허용 |
-| **권한 관리** | `codyssey-infra` IAM 사용자에게 인프라 구성과 비용 확인에 필요한 권한만 부여 |
-| **자동화** | AWS CLI 스크립트로 인프라 생성, 검증, 삭제 수행 |
+| 로컬 환경 | Bash가 실행되는 macOS/Linux 또는 Windows WSL |
+| 필수 도구 | AWS CLI v2, `curl`, OpenSSH 클라이언트 |
+| AWS 계정 | 루트 계정이 아닌 `codyssey-infra` IAM 사용자 사용 |
+| 배포 위치 | 서울 리전 `ap-northeast-2`, 단일 AZ |
+| 인스턴스 | `t2.micro` 또는 `t3.micro` 1대, EBS gp3 8 GiB |
+| 보안 | HTTP 80만 전체 공개, SSH 22는 운영자 IP `/32`로 제한 |
+| 범위 제외 | ALB, Auto Scaling, RDS, HTTPS, 고가용성 구성 |
+
+키페어 개인키는 `~/.ssh/codyssey-key.pem`에 권한 `400`으로 보관하며 저장소에 커밋하지 않습니다. 프리 티어 대상 인스턴스 유형은 계정과 시점에 따라 달라질 수 있으므로 생성 전에 확인합니다.
+
+```bash
+aws --version
+bash --version
+curl --version
+ssh -V
+```
 
 ---
 
@@ -82,24 +65,7 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 
    > 자격 증명은 README나 소스 코드에 직접 적거나 Git 저장소에 커밋하지 않습니다.
 
-2. **필수 도구 설치**
-
-   스크립트는 Bash를 사용하므로 Windows에서는 **WSL**, macOS/Linux에서는 기본 터미널을 사용합니다. 해당 환경에 다음 도구가 설치되어 있어야 합니다.
-
-   - AWS CLI v2: AWS 리소스 생성·조회·삭제
-   - `curl`: 현재 공인 IP와 웹 서버 응답 확인
-   - OpenSSH 클라이언트(`ssh`): EC2 내부 상태 확인
-
-   다음 명령으로 설치 여부를 확인할 수 있습니다.
-
-   ```bash
-   aws --version
-   bash --version
-   curl --version
-   ssh -V
-   ```
-
-3. **AWS CLI 자격 증명 설정**
+2. **AWS CLI 자격 증명 설정**
 
    WSL/Linux 셸에서 아래 명령을 실행하고 IAM 사용자의 자격 증명을 입력합니다. 기본 리전은 이 프로젝트가 사용하는 서울 리전 `ap-northeast-2`, 출력 형식은 `json`으로 설정합니다.
 
@@ -120,7 +86,7 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 
    호출자 정보와 `ap-northeast-2`가 출력되는지 확인합니다. 스크립트도 실행 시 리전을 서울로 설정하지만, 다른 프로젝트와 혼동하지 않도록 CLI 설정을 먼저 확인하는 편이 안전합니다.
 
-4. **프로젝트 디렉터리로 이동**
+3. **프로젝트 디렉터리로 이동**
 
    아래 명령을 실행했을 때 `infra`, `scripts`, `README.md`가 보이는 위치여야 합니다.
 
@@ -228,27 +194,10 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 
 ## 정상 동작 확인
 
-과제의 외부 접속 검증은 **(B) 헬스체크 호출** 방식을 선택했습니다. 2026-08-22 검증 당시 `GET http://43.203.231.184/health`가 `200`과 고정 본문 `OK`를 반환했고, 기본 경로 `/`도 `200`을 반환했습니다. 해당 리소스는 검증 후 삭제했으므로 이 IP는 현재 접속 주소가 아니라 당시의 기록입니다.
+외부 접속은 방식 **(B) `GET /health`**로 검증했습니다. 2026-08-22 실행에서 `200 OK`, 본문 `OK`를 확인했고 자동 검증 11개가 모두 통과했습니다. 해당 EC2는 검증 후 삭제했습니다.
 
-![외부 헬스체크 접속 결과](docs/images/health-check.png)
-
-[`scripts/verify.sh`](scripts/verify.sh)는 태그로 실행 중인 인스턴스를 찾아 다음 11개 항목을 검사합니다.
-
-| 구분 | 자동 검증 항목 | 정상 기준 |
-|------|----------------|-----------|
-| 네트워크 | 기본 라우트 대상 | `0.0.0.0/0 → IGW` |
-| 네트워크 | 서브넷 퍼블릭 IPv4 자동 할당 | `True` |
-| 보안 | HTTP 80 전체 공개 | 허용 |
-| 보안 | SSH 22 전체 공개 | 미허용 |
-| 보안 | 전체 포트 전체 공개 | 미허용 |
-| 외부 접속 | `GET /` | `200` |
-| 외부 접속 | `GET /health` | `200` |
-| 외부 접속 | `/health` 본문 | `OK` |
-| 인스턴스 | Nginx 서비스 | `active` |
-| 인스턴스 | `curl http://localhost` | `200` |
-| 인스턴스 | `curl https://example.com` | `200` |
-
-저장된 실행 결과는 [`docs/verification.log`](docs/verification.log)에서 확인할 수 있으며, 당시 **11개 통과 / 0개 실패**였습니다. 이 자동 검증에는 IAM 정책 연결 여부와 리소스 삭제 결과가 포함되지 않으므로 각각 IAM 콘솔과 정리 체크리스트로 확인합니다.
+- [헬스체크 접속 화면](docs/images/health-check.png)
+- [전체 자동 검증 로그](docs/verification.log)
 
 ## 과제 결과물
 
@@ -291,12 +240,3 @@ B6-1.aws-infra-base/
 │   └── render_architecture.py      # 아키텍처 SVG 생성 도구
 └── README.md
 ```
-
----
-
-## 제약 사항
-
-- 프리 티어 범위에서 실행하려면 계정에 표시되는 대상 유형을 확인해야 합니다. 스크립트 기본값은 `t2.micro`이고 `INSTANCE_TYPE=t3.micro`로 변경할 수 있으며, EBS 기본 크기는 8 GiB입니다.
-- 루트 계정으로는 콘솔·CLI에 접근하지 않으며, `codyssey-infra` IAM 사용자만 사용합니다.
-- 키페어 개인키는 생성 시점에만 내려받을 수 있어 재발급이 불가능합니다. `~/.ssh/codyssey-key.pem`에 권한 `400`으로 보관하며 저장소에 커밋하지 않습니다.
-- 단일 AZ · 단일 인스턴스 구성이므로 고가용성은 범위에 없습니다. ALB, Auto Scaling, RDS, HTTPS는 구현하지 않았습니다.
