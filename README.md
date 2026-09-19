@@ -1,6 +1,6 @@
 # AWS 기초 웹 인프라 구축
 
-이 프로젝트는 VPC로 격리된 네트워크를 구성하고, 가상 서버에 애플리케이션을 배포해 외부에서 접속 가능한 웹 서비스를 만드는 것을 목표로 합니다. 네트워크와 서버 구축부터 보안·권한 설정, 접속 검증, 문제 해결, 리소스 정리까지의 과정을 담았습니다.
+AWS 서울 리전에 VPC와 Public Subnet을 구성하고, Ubuntu EC2 한 대에 Nginx를 배포해 외부에서 접근 가능한 웹 서비스를 만드는 프로젝트입니다. AWS CLI 스크립트로 인프라 생성, 요구사항 검증, 리소스 정리를 반복할 수 있으며 Security Group과 IAM 정책으로 네트워크 접근 및 AWS API 권한을 제한합니다.
 
 ---
 
@@ -23,7 +23,7 @@
     <tr>
       <td width="15%"><strong>서버</strong></td>
       <td>애플리케이션을 실행하고 사용자의 요청을 처리하는 컴퓨터</td>
-      <td>Public Subnet에 Ubuntu 24.04 LTS 기반 <code>t2.micro</code> EC2를 생성하고 Public IP를 할당합니다. <code>user-data</code>로 Nginx를 설치해 <code>/</code>와 <code>/health</code> 응답을 제공합니다.</td>
+      <td>Public Subnet에 Ubuntu 24.04 LTS 기반 micro급 EC2를 생성하고 Public IP를 할당합니다. <code>user-data</code>로 Nginx를 설치해 <code>/</code>와 <code>/health</code> 응답을 제공합니다.</td>
     </tr>
     <tr>
       <td width="15%"><strong>보안</strong></td>
@@ -44,7 +44,7 @@
 
 ## 아키텍처
 
-![AWS 웹 인프라 아키텍처](docs/images/aws-infra-architecture.png)
+![AWS 웹 인프라 아키텍처](docs/architecture.png)
 
 ### 통신 흐름
 
@@ -54,32 +54,6 @@
 
 EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 Route Table에는 `0.0.0.0/0 → Internet Gateway` 경로가 필요합니다. Security Group은 HTTP 80번 포트를 전체에 공개하지만, SSH 22번 포트는 운영자의 공인 IP `/32`에만 허용합니다.
 
-### 인프라 구축 흐름
-
-1. **권한 준비**
-
-   루트 계정 대신 실습에 필요한 권한만 가진 IAM 사용자를 사용합니다.
-
-2. **네트워크 구성**
-
-   VPC를 생성하고 그 안에 Public Subnet을 만듭니다.
-
-3. **인터넷 연결과 접근 제어**
-
-   Internet Gateway와 Route Table로 인터넷 경로를 만들고, Security Group으로 HTTP와 SSH의 접근 범위를 제한합니다.
-
-4. **웹 서버 배포**
-
-   Public Subnet에 EC2를 생성하고 `user-data`로 Nginx를 자동 설치합니다.
-
-5. **동작 검증**
-
-   SSH로 서버 내부 상태를 확인하고, Public IP와 `/health`를 이용해 외부 접속을 검증합니다.
-
-6. **기록과 정리**
-
-   문제와 해결 과정을 기록한 뒤, 과금 방지를 위해 생성한 리소스를 모두 삭제합니다.
-
 ## 인프라 구성
 
 | 영역 | 구성 |
@@ -87,7 +61,7 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 | **배포 위치** | AWS 서울 Region(`ap-northeast-2`), AZ `ap-northeast-2a` |
 | **네트워크** | VPC `10.0.0.0/16` 안에 Public Subnet `10.0.1.0/24` 구성 |
 | **인터넷 연결** | Internet Gateway와 `0.0.0.0/0` Route 연결, 퍼블릭 IPv4 자동 할당 |
-| **서버** | EC2 `t2.micro`, Ubuntu 24.04 LTS |
+| **서버** | EC2 micro급(`t2.micro` 기본값, 환경변수로 변경 가능), Ubuntu 24.04 LTS |
 | **스토리지** | EBS gp3 8 GiB, EC2 인스턴스 삭제 시 함께 삭제 |
 | **웹 서비스** | Nginx가 HTTP 80번 포트에서 `/`와 `/health` 응답 제공 |
 | **접근 제어** | HTTP 80은 전체 공개, SSH 22는 운영자 IP `/32`에만 허용 |
@@ -104,7 +78,7 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 
 1. **AWS IAM 사용자와 권한 준비**
 
-   AWS 루트 계정 대신 `codyssey-infra` IAM 사용자를 준비합니다. 이 사용자에게는 [`infra/iam-policy.json`](infra/iam-policy.json)의 정책이 연결되어 있어야 하며, CLI 로그인에 사용할 **Access Key ID**와 **Secret Access Key**가 필요합니다.
+   AWS 루트 계정 대신 `codyssey-infra` IAM 사용자를 준비합니다. 이 사용자에게 [`infra/iam-policy.json`](infra/iam-policy.json)을 고객 관리형 정책 또는 인라인 정책으로 연결해야 합니다. 정책 생성과 사용자 연결은 스크립트가 자동화하지 않습니다. CLI 로그인에 사용할 **Access Key ID**와 **Secret Access Key**도 필요합니다.
 
    > 자격 증명은 README나 소스 코드에 직접 적거나 Git 저장소에 커밋하지 않습니다.
 
@@ -141,7 +115,10 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 
    ```bash
    aws sts get-caller-identity
+   aws configure get region
    ```
+
+   호출자 정보와 `ap-northeast-2`가 출력되는지 확인합니다. 스크립트도 실행 시 리전을 서울로 설정하지만, 다른 프로젝트와 혼동하지 않도록 CLI 설정을 먼저 확인하는 편이 안전합니다.
 
 4. **프로젝트 디렉터리로 이동**
 
@@ -154,6 +131,27 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 
 > `provision.sh`는 실행한 컴퓨터의 현재 공인 IP를 확인해 그 IP에만 SSH 접속을 허용합니다. 따라서 실행 중에는 인터넷 연결이 필요하며, 실행 후 공인 IP가 바뀌면 SSH 접속이 제한될 수 있습니다.
 
+### 실행 설정
+
+별도 설정이 없으면 아래 기본값을 사용합니다. 과제의 리전과 IAM 정책이 서울 리전으로 고정되어 있으므로 `REGION`은 변경하지 않습니다.
+
+| 환경변수 | 기본값 | 용도 |
+|------|------|------|
+| `REGION` / `AZ` | `ap-northeast-2` / `ap-northeast-2a` | 리소스 생성 위치 |
+| `INSTANCE_TYPE` | `t2.micro` | EC2 유형. IAM 정책상 `t2.micro`, `t3.micro`만 허용 |
+| `VOLUME_SIZE` | `8` | 루트 EBS 크기(GiB) |
+| `SSH_CIDR` | 현재 공인 IP `/32` 자동 조회 | SSH 허용 대역을 직접 지정할 때 사용 |
+| `PROJECT_TAG` | `codyssey-b6-1` | 검증·삭제 대상 식별 태그 |
+| `KEY_NAME` / `KEY_FILE` | `codyssey-key` / `~/.ssh/codyssey-key.pem` | EC2 키페어와 로컬 개인키 경로 |
+
+AWS의 프리 티어 대상은 계정과 시점에 따라 다를 수 있습니다. 생성 전에 아래 명령으로 대상 유형을 확인하고, `t2.micro`가 대상이 아니면 `t3.micro`로 실행합니다.
+
+```bash
+aws ec2 describe-instance-types \
+  --filters Name=free-tier-eligible,Values=true \
+  --query 'InstanceTypes[].InstanceType' --output text
+```
+
 ### 실행 순서
 
 다음 네 단계를 순서대로 실행합니다.
@@ -162,6 +160,8 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 
    ```bash
    bash scripts/provision.sh
+   # t3.micro를 사용해야 하는 계정:
+   # INSTANCE_TYPE=t3.micro bash scripts/provision.sh
    ```
 
    VPC, Public Subnet, Internet Gateway, Route Table, Security Group, Key Pair를 차례대로 만들고, 마지막으로 Nginx가 설치될 EC2 인스턴스를 생성합니다.
@@ -169,10 +169,11 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 2. **Nginx 설치 대기**
 
    ```bash
-   sleep 90
+   PUBLIC_IP="x.x.x.x"  # provision.sh가 출력한 Public IPv4로 교체
+   ssh -i ~/.ssh/codyssey-key.pem ubuntu@"$PUBLIC_IP" 'cloud-init status --wait'
    ```
 
-   EC2가 시작된 직후 [`user-data.sh`](infra/user-data.sh)가 내부에서 Nginx를 자동으로 설치합니다. EC2의 `running` 상태는 설치 완료를 의미하지 않으므로 90초 동안 기다립니다.
+   EC2가 시작된 직후 [`user-data.sh`](infra/user-data.sh)가 Nginx를 설치합니다. EC2의 `running` 상태는 초기화 완료를 의미하지 않으므로 `cloud-init`이 끝난 뒤 검증합니다. SSH가 아직 준비되지 않았다면 잠시 후 같은 명령을 다시 실행합니다.
 
 3. **정상 작동 검증**
 
@@ -180,7 +181,7 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
    bash scripts/verify.sh
    ```
 
-   HTTP 80번 포트 공개 여부, SSH 접속, Nginx 실행 상태, `/health`의 `200 OK` 응답 등 요구사항 11개를 자동으로 점검합니다.
+   네트워크, 보안 그룹, 외부 HTTP 응답, SSH, Nginx와 아웃바운드 통신에 관한 11개 항목을 자동으로 점검합니다. 결과는 `docs/verification.log`에 덮어씁니다. IAM 정책 연결 여부와 리소스 삭제 완료 여부는 이 스크립트의 검증 범위가 아닙니다.
 
 4. **실습 리소스 삭제**
 
@@ -192,7 +193,7 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 
 ### 자동 설정
 
-`provision.sh`는 모든 리소스에 `Project=codyssey-b6-1` 태그를 붙여 검증과 삭제 대상을 구분합니다. [`infra/user-data.sh`](infra/user-data.sh)는 EC2 최초 부팅 시 Nginx를 설치하고 `/`와 `/health` 응답을 설정합니다.
+`provision.sh`는 생성 리소스에 `Project=codyssey-b6-1` 태그를 붙여 검증과 삭제 대상을 구분합니다. [`infra/user-data.sh`](infra/user-data.sh)는 EC2 최초 부팅 시 Nginx를 설치하고 `/`와 `/health` 응답을 설정합니다. 보안 그룹 판정 로직만 AWS 연결 없이 확인하려면 `bash scripts/test-sg-rules.sh`를 실행합니다.
 
 ---
 
@@ -202,11 +203,11 @@ EC2에 Public IP가 있어야 외부와 통신할 수 있고, Public Subnet의 R
 
 | 방향 | 포트 | 허용 대상 | 설정 이유 |
 |------|------|-------------|------|
-| 인바운드 | http 80 | `0.0.0.0/0` (모든 IP) | 웹 서비스는 누구나 접속할 수 있어야 하므로 허용    |
+| 인바운드 | HTTP 80 | `0.0.0.0/0` (모든 IP) | 웹 서비스는 누구나 접속할 수 있어야 하므로 허용 |
 | 인바운드 | SSH 22 | 운영자 공인 IP `/32` | 서버 관리용 접속은 운영자만 할 수 있도록 제한 |
 | 아웃바운드 | 전체 | `0.0.0.0/0` (모든 IP) | 패키지 설치, 업데이트 등 서버에서 인터넷에 접속해야 하는 작업을 위해 허용 |
 
-`0.0.0.0/0`에서 모든 포트에 접근할 수 있도록 하는 규칙은 만들지 않았으며, [`scripts/test-sg-rules.sh`](scripts/test-sg-rules.sh)에서 이를 검사합니다.
+`0.0.0.0/0`에서 모든 포트에 접근할 수 있도록 하는 규칙은 만들지 않았습니다. 실제 Security Group은 `verify.sh`가 검사하고, `test-sg-rules.sh`는 판정 함수의 테스트 입력만 검사합니다.
 
 SSH에 접속할 수 있는 IP는 `provision.sh`를 실행할 때 현재 운영자의 공인 IP를 확인하여 `/32` 형태로 자동 등록합니다. 운영자의 공인 IP 변경으로 발생한 기존 SSH 접속 차단 문제는 [트러블슈팅 Case 3](docs/troubleshooting.md)에 기록했습니다.
 
@@ -225,60 +226,44 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 
 ---
 
-## 검증 결과
+## 정상 동작 확인
 
-**검증 방식: (B) 헬스체크 호출** — 응답 본문이 고정되어 있어 증빙이 명확하기 때문입니다. (A) 브라우저 접속도 함께 확인했습니다.
+과제의 외부 접속 검증은 **(B) 헬스체크 호출** 방식을 선택했습니다. 2026-08-22 검증 당시 `GET http://43.203.231.184/health`가 `200`과 고정 본문 `OK`를 반환했고, 기본 경로 `/`도 `200`을 반환했습니다. 해당 리소스는 검증 후 삭제했으므로 이 IP는 현재 접속 주소가 아니라 당시의 기록입니다.
 
-| 구분 | 내용 |
-|------|------|
-| 접속 주소 | `http://43.202.71.184/health` |
-| 응답 | `200 OK`, 본문 `OK` |
-| 함께 확인 | `http://43.202.71.184/` → `200`, 정적 페이지 표시 |
+![외부 헬스체크 접속 결과](docs/images/health-check.png)
 
-```console
-$ curl -i http://43.202.71.184/health
-HTTP/1.1 200 OK
-Server: nginx/1.24.0 (Ubuntu)
-Content-Type: text/plain
-Content-Length: 3
+[`scripts/verify.sh`](scripts/verify.sh)는 태그로 실행 중인 인스턴스를 찾아 다음 11개 항목을 검사합니다.
 
-OK
-```
+| 구분 | 자동 검증 항목 | 정상 기준 |
+|------|----------------|-----------|
+| 네트워크 | 기본 라우트 대상 | `0.0.0.0/0 → IGW` |
+| 네트워크 | 서브넷 퍼블릭 IPv4 자동 할당 | `True` |
+| 보안 | HTTP 80 전체 공개 | 허용 |
+| 보안 | SSH 22 전체 공개 | 미허용 |
+| 보안 | 전체 포트 전체 공개 | 미허용 |
+| 외부 접속 | `GET /` | `200` |
+| 외부 접속 | `GET /health` | `200` |
+| 외부 접속 | `/health` 본문 | `OK` |
+| 인스턴스 | Nginx 서비스 | `active` |
+| 인스턴스 | `curl http://localhost` | `200` |
+| 인스턴스 | `curl https://example.com` | `200` |
 
-![헬스체크 및 브라우저 접속 결과](docs/images/web-access.png)
+저장된 실행 결과는 [`docs/verification.log`](docs/verification.log)에서 확인할 수 있으며, 당시 **11개 통과 / 0개 실패**였습니다. 이 자동 검증에는 IAM 정책 연결 여부와 리소스 삭제 결과가 포함되지 않으므로 각각 IAM 콘솔과 정리 체크리스트로 확인합니다.
 
-### 요구사항 검증 결과
+## 과제 결과물
 
-`scripts/verify.sh` 가 아래 항목(마지막 정리 항목 제외)을 한 번에 점검하고, PASS/FAIL 판정을 포함한 전체 출력을 [`docs/verification.log`](docs/verification.log) 에 남깁니다. 11개 항목 전부 통과했습니다.
-
-| 구분 | 요구사항 | 검증 방법 |
-|------|----------|-----------|
-| 네트워크 | 라우트 `0.0.0.0/0 → IGW` 존재 | `describe-route-tables` 의 게이트웨이 ID 확인 |
-| 네트워크 | 서브넷 퍼블릭 IPv4 자동 할당 | `describe-subnets` 의 `MapPublicIpOnLaunch` |
-| 네트워크 | 인스턴스의 인터넷 아웃바운드 | 인스턴스 내부 `curl https://example.com` → 200 |
-| 컴퓨트 | SSH 접속 가능 | `ssh -i ~/.ssh/codyssey-key.pem ubuntu@43.202.71.184` |
-| 컴퓨트 | 웹 서버 실행 상태 | `systemctl is-active nginx` → `active` |
-| 컴퓨트 | 로컬 루프백 응답 | 인스턴스 내부 `curl http://localhost` → 200 |
-| 보안 | HTTP 80 은 전체 공개 | 보안 그룹 인바운드 규칙 판정 |
-| 보안 | SSH 22 는 전체 공개 아님 | 보안 그룹 인바운드 규칙 판정 |
-| 보안 | `0.0.0.0/0` 전체 포트 허용 규칙 없음 | 보안 그룹 인바운드 규칙 판정 |
-| 외부 접속 | `GET /health` → 200 + 본문 `OK` | 로컬에서 `curl` |
-| 운영 | 실습 리소스 정리 완료 | [정리 체크리스트](docs/cleanup-checklist.md) 의 항목별 조회 명령 |
-
----
-
-## 트러블슈팅
-
-구축과 검증 중 발생한 문제 3건은 [트러블슈팅 보고서](docs/troubleshooting.md)에 증상 → 가설 → 검증 → 조치 → 결과 → 재발 방지 순서로 정리했습니다.
-
----
+| 결과물 | 구현 및 확인 위치 |
+|--------|-------------------|
+| 아키텍처 다이어그램 | [AWS 인프라 구성과 트래픽 흐름](docs/architecture.png) |
+| 외부 접속 검증 | 방식 B(`/health`), [접속 화면](docs/images/health-check.png), [자동 검증 기록](docs/verification.log) |
+| 트러블슈팅 보고서 | [실제 장애 3건과 진단 절차](docs/troubleshooting.md) |
+| 리소스 정리 체크리스트 | [삭제 순서, 조회 명령과 완료 기록](docs/cleanup-checklist.md) |
 
 ## 리소스 정리
 
-[`docs/cleanup-checklist.md`](docs/cleanup-checklist.md) 에 삭제 순서와 항목별 확인 명령, 실행 기록을 남겼습니다. 2026-08-10 23:58 정리 완료했습니다.
+[`scripts/cleanup.sh`](scripts/cleanup.sh)는 EC2 종료 후 EIP, 잔여 EBS, Route Table, IGW, Subnet, Security Group, VPC, AWS 키페어 순으로 프로젝트 태그가 붙은 리소스를 정리하고 남은 항목을 조회합니다. 2026-08-22의 삭제 결과는 [정리 체크리스트](docs/cleanup-checklist.md)에 기록되어 있습니다.
 
-`cleanup.sh` 는 의존 관계 역순(EC2 → EIP → EBS → 라우트 테이블 → IGW → 서브넷 → SG → VPC → 키페어)으로 삭제하고, 마지막에 남은 리소스를 다시 조회해 출력합니다.
-구조적으로도 과금 위험을 줄였습니다. 루트 볼륨은 `DeleteOnTermination=true` 이고, Elastic IP 는 아예 할당하지 않았습니다.
+루트 볼륨은 `DeleteOnTermination=true`이고 Elastic IP는 생성하지 않습니다. AWS 키페어를 삭제해도 로컬 개인키 `~/.ssh/codyssey-key.pem`은 자동 삭제되지 않으므로 더 이상 필요 없다면 별도로 제거합니다.
 
 ---
 
@@ -287,12 +272,13 @@ OK
 ```
 B6-1.aws-infra-base/
 ├── docs/                           # 제출 문서 및 증빙
+│   ├── architecture.png            # 아키텍처 다이어그램
 │   ├── study-notes.md              # AWS 기초 용어와 과제 학습 노트
 │   ├── troubleshooting.md          # 트러블슈팅 보고서
 │   ├── cleanup-checklist.md        # 리소스 정리 체크리스트
 │   ├── verification.log            # verify.sh 실행 기록
-│   └── images/                     # 문서용 이미지와 증빙
-│       └── aws-infra-architecture.png # README용 아키텍처 다이어그램
+│   └── images/
+│       └── health-check.png         # 외부 접속 결과
 ├── infra/                          # 인프라 정의
 │   ├── iam-policy.json             # IAM 사용자에 부여한 최소 권한 정책
 │   └── user-data.sh                # EC2 부팅 시 Nginx 설치·설정
@@ -302,7 +288,7 @@ B6-1.aws-infra-base/
 │   ├── verify.sh                   # 요구사항 검증
 │   ├── cleanup.sh                  # 리소스 삭제 (생성 역순)
 │   ├── test-sg-rules.sh            # 보안 그룹 판정 로직 단위 테스트
-│   └── render_architecture.py      # architecture.png 생성
+│   └── render_architecture.py      # 아키텍처 SVG 생성 도구
 └── README.md
 ```
 
@@ -310,7 +296,7 @@ B6-1.aws-infra-base/
 
 ## 제약 사항
 
-- 프리티어 범위 내에서 진행합니다. 서울 리전 프리티어 대상인 `t2.micro` 를 기본값으로 두었고, EBS 는 8 GiB 로 시작합니다
-- 루트 계정으로는 콘솔·CLI 에 접근하지 않으며, `codyssey-infra` IAM 사용자만 사용합니다
-- 키페어 개인키는 생성 시점에만 내려받을 수 있어 재발급이 불가능합니다. `~/.ssh/codyssey-key.pem` 에 권한 `400` 으로 보관하며 저장소에 커밋하지 않습니다
+- 프리 티어 범위에서 실행하려면 계정에 표시되는 대상 유형을 확인해야 합니다. 스크립트 기본값은 `t2.micro`이고 `INSTANCE_TYPE=t3.micro`로 변경할 수 있으며, EBS 기본 크기는 8 GiB입니다.
+- 루트 계정으로는 콘솔·CLI에 접근하지 않으며, `codyssey-infra` IAM 사용자만 사용합니다.
+- 키페어 개인키는 생성 시점에만 내려받을 수 있어 재발급이 불가능합니다. `~/.ssh/codyssey-key.pem`에 권한 `400`으로 보관하며 저장소에 커밋하지 않습니다.
 - 단일 AZ · 단일 인스턴스 구성이므로 고가용성은 범위에 없습니다. ALB, Auto Scaling, RDS, HTTPS는 구현하지 않았습니다.
