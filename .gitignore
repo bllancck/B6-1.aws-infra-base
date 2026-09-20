@@ -14,3 +14,6 @@ infra-execution-log.md
 
 # 로컬 전용 아키텍처 SVG
 /docs/architecture.svg
+
+# 로컬 전용 접속 화면
+/docs/images/web-access.png

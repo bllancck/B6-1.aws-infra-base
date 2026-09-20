@@ -1,6 +1,6 @@
 # AWS 기초 웹 인프라 구축
 
-AWS 서울 리전의 Public Subnet에 둔 EC2에 Nginx를 배포하고, 인프라 생성·검증·정리를 AWS CLI로 자동화한 프로젝트입니다.
+AWS 서울 리전에서 VPC 기반 웹 서비스 인프라를 설계·구축하고, Security Group과 IAM 최소 권한을 적용한 EC2/Nginx 서비스를 배포·검증한 프로젝트입니다. 인프라 생성·검증·정리 과정은 AWS CLI 스크립트로 자동화했습니다.
 
 ---
 
@@ -42,7 +42,9 @@ AWS 서울 리전의 Public Subnet에 둔 EC2에 Nginx를 배포하고, 인프�
 | 보안 | HTTP 80만 전체 공개, SSH 22는 운영자 IP `/32`로 제한 |
 | 범위 제외 | ALB, Auto Scaling, RDS, HTTPS, 고가용성 구성 |
 
-키페어 개인키는 `~/.ssh/codyssey-key.pem`에 권한 `400`으로 보관하며 저장소에 커밋하지 않습니다. 프리 티어 대상 인스턴스 유형은 계정과 시점에 따라 달라질 수 있으므로 생성 전에 확인합니다.
+키페어 개인키는 `~/.ssh/codyssey-key.pem`에 권한 `400`으로 보관하며 저장소에 커밋하지 않습니다.
+
+아래 명령으로 프로젝트 실행에 필요한 AWS CLI, Bash, curl, SSH가 설치되어 있는지 확인합니다.
 
 ```bash
 aws --version
@@ -130,7 +132,7 @@ aws ec2 describe-instance-types \
    # INSTANCE_TYPE=t3.micro bash scripts/provision.sh
    ```
 
-   VPC, Public Subnet, Internet Gateway, Route Table, Security Group, Key Pair를 차례대로 만들고, 마지막으로 Nginx가 설치될 EC2 인스턴스를 생성합니다.
+   `provision.sh`는 VPC, Public Subnet, Internet Gateway, Route Table, Security Group, Key Pair와 EC2를 차례대로 생성합니다. 각 리소스에는 `Project=codyssey-b6-1` 태그를 붙여 이후 검증과 정리 대상을 구분합니다.
 
 2. **Nginx 설치 대기**
 
@@ -139,7 +141,7 @@ aws ec2 describe-instance-types \
    ssh -i ~/.ssh/codyssey-key.pem ubuntu@"$PUBLIC_IP" 'cloud-init status --wait'
    ```
 
-   EC2가 시작된 직후 [`user-data.sh`](infra/user-data.sh)가 Nginx를 설치합니다. EC2의 `running` 상태는 초기화 완료를 의미하지 않으므로 `cloud-init`이 끝난 뒤 검증합니다. SSH가 아직 준비되지 않았다면 잠시 후 같은 명령을 다시 실행합니다.
+   EC2 최초 부팅 시 [`user-data.sh`](infra/user-data.sh)가 Nginx를 설치하고 `/`와 `/health` 응답을 설정합니다. EC2의 `running` 상태는 초기화 완료를 의미하지 않으므로 `cloud-init`이 끝난 뒤 검증합니다. SSH가 아직 준비되지 않았다면 잠시 후 같은 명령을 다시 실행합니다.
 
 3. **정상 작동 확인 — 방식 (A) 브라우저 접속**
 
@@ -149,7 +151,7 @@ aws ec2 describe-instance-types \
    http://<퍼블릭IP>
    ```
 
-   Nginx의 `Hello Cloud — Codyssey B6-1` 페이지가 표시되면 외부 접속이 정상입니다. 접속 URL과 페이지를 확인할 수 있도록 화면을 캡처해 접속 증빙으로 남깁니다.
+   Nginx 페이지가 표시되면 외부 접속이 정상입니다. 접속 URL과 페이지를 확인할 수 있도록 화면을 캡처해 접속 증빙으로 남깁니다.
 
 4. **추가 자동 검증**
 
@@ -157,7 +159,7 @@ aws ec2 describe-instance-types \
    bash scripts/verify.sh
    ```
 
-   네트워크, 보안 그룹, 외부 HTTP 응답, SSH, Nginx와 아웃바운드 통신에 관한 11개 항목을 자동으로 점검합니다. 결과는 `docs/verification.log`에 덮어씁니다. IAM 정책 연결 여부와 리소스 삭제 완료 여부는 이 스크립트의 검증 범위가 아닙니다.
+   네트워크, 보안 그룹, 외부 HTTP 응답, SSH, Nginx와 아웃바운드 통신에 관한 11개 항목을 자동으로 점검하고 결과를 `docs/verification.log`에 기록합니다. AWS 연결 없이 보안 그룹 판정 로직만 확인하려면 `bash scripts/test-sg-rules.sh`를 실행합니다. IAM 정책 연결 여부와 리소스 삭제 완료 여부는 검증 범위에 포함되지 않습니다.
 
 5. **실습 리소스 삭제**
 
@@ -166,10 +168,6 @@ aws ec2 describe-instance-types \
    ```
 
    실습 종료 후 불필요한 과금을 방지하기 위해 EC2, Subnet, VPC 등 생성한 리소스를 의존 관계의 역순으로 삭제합니다. 수동 AWS CLI 정리 결과와 최종 확인 항목은 [리소스 정리 체크리스트](docs/cleanup-checklist.md)에 기록했습니다.
-
-### 자동 설정
-
-`provision.sh`는 생성 리소스에 `Project=codyssey-b6-1` 태그를 붙여 검증과 삭제 대상을 구분합니다. [`infra/user-data.sh`](infra/user-data.sh)는 EC2 최초 부팅 시 Nginx를 설치하고 `/`와 `/health` 응답을 설정합니다. 보안 그룹 판정 로직만 AWS 연결 없이 확인하려면 `bash scripts/test-sg-rules.sh`를 실행합니다.
 
 ---
 
@@ -207,8 +205,8 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 외부 접속 검증은 방식 **(A) 브라우저 접속**으로 진행했습니다.
 
 - 접속 URL: `http://3.34.96.150`
-- 확인 결과: 브라우저에 Nginx의 `Hello Cloud — Codyssey B6-1` 페이지가 정상적으로 표시됨
-- 접속 증빙: [브라우저 접속 화면](docs/images/web-access.png)
+- 확인 결과: 브라우저에 Nginx의 `Welcome to nginx!` 페이지가 정상적으로 표시됨
+- 접속 증빙: [브라우저 접속 화면](docs/images/health-check.png)
 
 네트워크·보안·웹 서버의 세부 항목은 별도로 자동 검증했으며, 11개 항목이 모두 통과한 결과는 [전체 자동 검증 로그](docs/verification.log)에서 확인할 수 있습니다.
 
@@ -217,7 +215,7 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 | 결과물 | 구현 및 확인 위치 |
 |--------|-------------------|
 | 아키텍처 다이어그램 | [AWS 인프라 구성과 트래픽 흐름](docs/images/architecture.png) |
-| 외부 접속 검증 | 방식 A(브라우저), [접속 화면](docs/images/web-access.png), [자동 검증 기록](docs/verification.log) |
+| 외부 접속 검증 | 방식 A(브라우저), [접속 화면](docs/images/health-check.png), [자동 검증 기록](docs/verification.log) |
 | 트러블슈팅 보고서 | [실제 장애 3건과 진단 절차](docs/troubleshooting.md) |
 | 리소스 정리 체크리스트 | [삭제 순서, 수동 검증과 완료 기록](docs/cleanup-checklist.md) |
 
@@ -239,7 +237,7 @@ B6-1.aws-infra-base/
 │   ├── verification.log            # verify.sh 실행 기록
 │   └── images/
 │       ├── architecture.png         # 아키텍처 다이어그램
-│       └── web-access.png           # 외부 접속 결과
+│       └── health-check.png         # 브라우저 외부 접속 결과
 ├── infra/                          # 인프라 정의
 │   ├── iam-policy.json             # IAM 사용자에 부여한 최소 권한 정책
 │   └── user-data.sh                # EC2 부팅 시 Nginx 설치·설정
