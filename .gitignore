@@ -1,5 +1,4 @@
 B6-1.pdf
-infra-execution-log.md
 
 # 키페어 개인키는 절대 커밋하지 않는다 (재발급 불가)
 *.pem
@@ -7,13 +6,7 @@ infra-execution-log.md
 
 # 로컬 전용 문서
 /평가문항.md
-/implementation_plan.md
-/concept.md
 /docs/study-notes.md
-/docs/cleanup-checklist-old.md
 
 # 로컬 전용 아키텍처 SVG
 /docs/architecture.svg
-
-# 로컬 전용 접속 화면
-/docs/images/web-access.png

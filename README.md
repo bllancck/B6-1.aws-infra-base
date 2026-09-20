@@ -183,7 +183,7 @@ aws ec2 describe-instance-types \
 
 `0.0.0.0/0`에서 모든 포트에 접근할 수 있도록 하는 규칙은 만들지 않았습니다. 실제 Security Group은 `verify.sh`가 검사하고, `test-sg-rules.sh`는 판정 함수의 테스트 입력만 검사합니다.
 
-SSH에 접속할 수 있는 IP는 `provision.sh`를 실행할 때 현재 운영자의 공인 IP를 확인하여 `/32` 형태로 자동 등록합니다. 운영자의 공인 IP 변경으로 발생한 기존 SSH 접속 차단 문제는 [트러블슈팅 Case 3](docs/troubleshooting.md)에 기록했습니다.
+SSH에 접속할 수 있는 IP는 `provision.sh`를 실행할 때 현재 운영자의 공인 IP를 확인하여 `/32` 형태로 자동 등록합니다. 실행 후 운영자의 공인 IP가 바뀌면 SSH 접속이 제한될 수 있으므로, 현재 공인 IP를 기준으로 Security Group의 22번 포트 허용 대상을 갱신해야 합니다.
 
 ### IAM — AWS에서 수행할 수 있는 작업과 범위를 제한
 
@@ -196,7 +196,7 @@ SSH에 접속할 수 있는 IP는 `provision.sh`를 실행할 때 현재 운영�
 | 과금 가드레일 | `ec2:RunInstances` 를 `t2.micro` / `t3.micro` 만 생성할 수 있도록 제한 |
 | 비용 확인 | `ce:GetCostAndUsage` 비용 정보 읽기 권한만 허용 |
 
-Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소스를 다루는 API 권한을 제어합니다. 두 설정은 서로 다른 보안 계층이므로 모두 적용해야 합니다. IAM 권한 누락 사례는 [트러블슈팅 Case 1](docs/troubleshooting.md)에 기록했습니다.
+Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소스를 다루는 API 권한을 제어합니다. 두 설정은 서로 다른 보안 계층이므로 모두 적용해야 합니다. AWS CLI 설치와 IAM 사용자 인증을 준비하며 겪은 문제는 [트러블슈팅 보고서](docs/troubleshooting.md)에 기록했습니다.
 
 ---
 
@@ -206,7 +206,7 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 
 - 접속 URL: `http://3.34.96.150`
 - 확인 결과: 브라우저에 Nginx의 `Welcome to nginx!` 페이지가 정상적으로 표시됨
-- 접속 증빙: [브라우저 접속 화면](docs/images/health-check.png)
+- 접속 증빙: [브라우저 접속 화면](docs/images/browser-access.png)
 
 네트워크·보안·웹 서버의 세부 항목은 별도로 자동 검증했으며, 11개 항목이 모두 통과한 결과는 [전체 자동 검증 로그](docs/verification.log)에서 확인할 수 있습니다.
 
@@ -215,8 +215,8 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 | 결과물 | 구현 및 확인 위치 |
 |--------|-------------------|
 | 아키텍처 다이어그램 | [AWS 인프라 구성과 트래픽 흐름](docs/images/architecture.png) |
-| 외부 접속 검증 | 방식 A(브라우저), [접속 화면](docs/images/health-check.png), [자동 검증 기록](docs/verification.log) |
-| 트러블슈팅 보고서 | [실제 장애 3건과 진단 절차](docs/troubleshooting.md) |
+| 외부 접속 검증 | 방식 A(브라우저), [접속 화면](docs/images/browser-access.png), [자동 검증 기록](docs/verification.log) |
+| 트러블슈팅 보고서 | [AWS CLI 설치 실패 사례](docs/troubleshooting.md) |
 | 리소스 정리 체크리스트 | [삭제 순서, 수동 검증과 완료 기록](docs/cleanup-checklist.md) |
 
 ## 리소스 정리
@@ -237,7 +237,7 @@ B6-1.aws-infra-base/
 │   ├── verification.log            # verify.sh 실행 기록
 │   └── images/
 │       ├── architecture.png         # 아키텍처 다이어그램
-│       └── health-check.png         # 브라우저 외부 접속 결과
+│       └── browser-access.png       # 브라우저 외부 접속 결과
 ├── infra/                          # 인프라 정의
 │   ├── iam-policy.json             # IAM 사용자에 부여한 최소 권한 정책
 │   └── user-data.sh                # EC2 부팅 시 Nginx 설치·설정
