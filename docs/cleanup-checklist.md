@@ -60,33 +60,172 @@ EC2 종료
 
 ---
 
-## 4. 주요 확인 방법
+## 4. 수동 검증 명령어
 
-각 리소스는 삭제 후 AWS CLI의 조회 명령으로 다시 확인했다.
-
-대부분의 리소스는 프로젝트 태그를 기준으로 조회했으며,
-정상적으로 삭제된 경우 결과가 빈 배열 `[]`로 출력되는 것을 확인했다.
-
-예:
+아래 명령은 리소스의 의존 관계를 고려한 실제 삭제 순서이다. 먼저 서울 리전과 프로젝트 태그를 설정한다.
 
 ```bash
+export AWS_DEFAULT_REGION=ap-northeast-2
+PROJECT_TAG=codyssey-b6-1
+```
+
+### 4-1. EC2 인스턴스 종료
+
+```bash
+INSTANCE_ID=$(aws ec2 describe-instances \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+            "Name=instance-state-name,Values=pending,running,stopping,stopped" \
+  --query 'Reservations[].Instances[].InstanceId' --output text)
+
+aws ec2 terminate-instances --instance-ids "$INSTANCE_ID"
+aws ec2 wait instance-terminated --instance-ids "$INSTANCE_ID"
+
+aws ec2 describe-instances --instance-ids "$INSTANCE_ID" \
+  --query 'Reservations[0].Instances[0].State.Name' --output text
+```
+
+조회 결과가 `terminated`이면 종료가 완료된 것이다.
+
+### 4-2. EBS 볼륨 삭제 확인
+
+루트 EBS는 `DeleteOnTermination=true`이므로 EC2와 함께 자동 삭제된다. 남은 볼륨을 먼저 조회한다.
+
+```bash
+VOLUME_ID=$(aws ec2 describe-volumes \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+            "Name=status,Values=available" \
+  --query 'Volumes[0].VolumeId' --output text)
+
+aws ec2 describe-volumes \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'Volumes[].VolumeId' --output json
+```
+
+결과가 `[]`가 아니고 `available` 상태의 볼륨이 남아 있다면 각 볼륨을 삭제한다.
+
+```bash
+aws ec2 delete-volume --volume-id "$VOLUME_ID"
+```
+
+### 4-3. Elastic IP 확인 및 릴리스
+
+이번 실습에서는 Elastic IP를 생성하지 않았으므로 조회 결과가 `[]`인지 확인했다.
+
+```bash
+ALLOCATION_ID=$(aws ec2 describe-addresses \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'Addresses[0].AllocationId' --output text)
+
+aws ec2 describe-addresses \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'Addresses[].AllocationId' --output json
+```
+
+만약 Allocation ID가 출력되면 다음과 같이 릴리스한다.
+
+```bash
+aws ec2 release-address --allocation-id "$ALLOCATION_ID"
+```
+
+### 4-4. Route Table 연결 해제 및 삭제
+
+```bash
+ROUTE_TABLE_ID=$(aws ec2 describe-route-tables \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'RouteTables[0].RouteTableId' --output text)
+
+ASSOCIATION_ID=$(aws ec2 describe-route-tables \
+  --route-table-ids "$ROUTE_TABLE_ID" \
+  --query 'RouteTables[0].Associations[?!Main].RouteTableAssociationId | [0]' \
+  --output text)
+
+aws ec2 disassociate-route-table --association-id "$ASSOCIATION_ID"
+aws ec2 delete-route-table --route-table-id "$ROUTE_TABLE_ID"
+
+aws ec2 describe-route-tables \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'RouteTables[].RouteTableId' --output json
+```
+
+### 4-5. Internet Gateway 분리 및 삭제
+
+```bash
+VPC_ID=$(aws ec2 describe-vpcs \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'Vpcs[0].VpcId' --output text)
+
+IGW_ID=$(aws ec2 describe-internet-gateways \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'InternetGateways[0].InternetGatewayId' --output text)
+
+aws ec2 detach-internet-gateway \
+  --internet-gateway-id "$IGW_ID" --vpc-id "$VPC_ID"
+aws ec2 delete-internet-gateway --internet-gateway-id "$IGW_ID"
+
+aws ec2 describe-internet-gateways \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'InternetGateways[].InternetGatewayId' --output json
+```
+
+### 4-6. Public Subnet 삭제
+
+```bash
+SUBNET_ID=$(aws ec2 describe-subnets \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'Subnets[0].SubnetId' --output text)
+
+aws ec2 delete-subnet --subnet-id "$SUBNET_ID"
+
+aws ec2 describe-subnets \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'Subnets[].SubnetId' --output json
+```
+
+### 4-7. Security Group 삭제
+
+```bash
+SECURITY_GROUP_ID=$(aws ec2 describe-security-groups \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+            "Name=group-name,Values=codyssey-web-sg" \
+  --query 'SecurityGroups[0].GroupId' --output text)
+
+aws ec2 delete-security-group --group-id "$SECURITY_GROUP_ID"
+
+aws ec2 describe-security-groups \
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'SecurityGroups[].GroupId' --output json
+```
+
+### 4-8. VPC 삭제
+
+```bash
+aws ec2 delete-vpc --vpc-id "$VPC_ID"
+
 aws ec2 describe-vpcs \
-  --filters "Name=tag:Project,Values=codyssey-b6-1" \
-  --query 'Vpcs[].VpcId' \
-  --output json
+  --filters "Name=tag:Project,Values=$PROJECT_TAG" \
+  --query 'Vpcs[].VpcId' --output json
 ```
 
-정리 완료 시:
+### 4-9. AWS Key Pair 삭제
 
-```json
-[]
+```bash
+aws ec2 delete-key-pair --key-name codyssey-key
+
+aws ec2 describe-key-pairs \
+  --filters "Name=key-name,Values=codyssey-key" \
+  --query 'KeyPairs[].KeyName' --output json
 ```
 
-EC2는 종료 후 다음과 같이 상태가 표시되는 것을 확인했다.
+조회 결과가 `[]`이면 AWS Key Pair가 삭제된 것이다.
 
-```text
-terminated
+### 4-10. 로컬 Private Key 삭제
+
+```bash
+rm -f -- "$HOME/.ssh/codyssey-key.pem"
+test ! -e ~/.ssh/codyssey-key.pem && echo "로컬 Private Key 삭제 완료"
 ```
+
+각 AWS 리소스의 최종 조회 결과가 빈 배열 `[]`이면 정리가 완료된 것이다. `terminated` EC2 기록은 약 1시간 동안 조회될 수 있지만 더 이상 과금되지 않는다.
 
 ---
 
