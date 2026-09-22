@@ -14,6 +14,8 @@ AWS 서울 리전에서 VPC 기반 웹 서비스 인프라를 설계·구축하�
 - **서버 관리**: `운영자 → Internet Gateway → Security Group(22, 운영자 IP/32) → EC2`
 - **아웃바운드**: `EC2 → Route Table(0.0.0.0/0) → Internet Gateway → 인터넷`
 
+이 구성에 사용된 `10.0.0.0/16`, `10.0.1.0/24`, `0.0.0.0/0`, `/32`의 의미와 주소 계산 방법은 [IPv4와 CIDR 이해하기](docs/ipv4-cidr.md)에서 확인할 수 있습니다.
+
 ## 인프라 구성
 
 | AWS 리소스 | 설정 | 역할 |
@@ -232,6 +234,7 @@ Security Group은 EC2의 네트워크 통신을 제어하고, IAM은 AWS 리소�
 ```
 B6-1.aws-infra-base/
 ├── docs/                           # 제출 문서 및 증빙
+│   ├── ipv4-cidr.md                # IPv4와 CIDR 개념 및 AWS 적용
 │   ├── troubleshooting.md          # 트러블슈팅 보고서
 │   ├── cleanup-checklist.md        # 리소스 정리 체크리스트
 │   ├── verification.log            # verify.sh 실행 기록
