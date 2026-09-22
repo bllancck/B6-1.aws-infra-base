@@ -14,6 +14,27 @@ AWS 서울 리전에서 VPC 기반 웹 서비스 인프라를 설계·구축하�
 - **서버 관리**: `운영자 → Internet Gateway → Security Group(22, 운영자 IP/32) → EC2`
 - **아웃바운드**: `EC2 → Route Table(0.0.0.0/0) → Internet Gateway → 인터넷`
 
+### Public Subnet이 인터넷과 연결되는 조건
+
+Internet Gateway(IGW)는 특정 Subnet이 아니라 **VPC에 연결**한다. Subnet은 자신과 연결된 Route Table을 통해 IGW로 향하는 경로를 사용한다.
+
+```text
+IGW ↔ VPC
+Public Subnet ↔ Route Table
+Route Table: 0.0.0.0/0 → IGW
+EC2: Public IPv4 보유
+```
+
+Route Table을 만들고 `0.0.0.0/0 → IGW` 경로를 추가하는 것만으로는 해당 Subnet에 적용되지 않는다. 이 프로젝트처럼 별도의 Public Route Table을 만들었다면 **실제 Public Subnet과 명시적으로 연결(association)**해야 한다. 연결하지 않으면 Subnet은 VPC의 Main Route Table을 사용하므로, 새로 만든 인터넷 경로가 적용되지 않을 수 있다.
+
+또한 Subnet에 인터넷 경로가 있더라도 EC2에 Public IPv4 또는 Elastic IP가 없으면 인터넷과 직접 통신할 수 없다. 따라서 이 프로젝트의 Public Subnet은 다음 조건을 함께 충족한다.
+
+- IGW가 VPC에 연결되어 있음
+- Public Subnet이 Public Route Table과 연결되어 있음
+- Public Route Table에 `0.0.0.0/0 → IGW` 경로가 있음
+- EC2에 Public IPv4가 할당되어 있음
+- Security Group이 필요한 인바운드·아웃바운드 통신을 허용함
+
 이 구성에 사용된 `10.0.0.0/16`, `10.0.1.0/24`, `0.0.0.0/0`, `/32`의 의미와 주소 계산 방법은 [IPv4와 CIDR 이해하기](docs/ipv4-cidr.md)에서 확인할 수 있습니다.
 
 ## 인프라 구성
